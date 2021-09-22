@@ -1,19 +1,20 @@
 /******************************************************************************
+*   File Name:      
 *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
-*   Date Created:
-*   Last Modified:
+*   Date Created:   
+*   Last Modified:  
 *   Purpose:        This file is the standard template that will be used as the
 *                     basis for all subsequent .cpp files for CSE321.
 *
-*   Functions:
+*   Functions:      
 *
-*   Associated Assignment:  CSE 321 Project 1, Fall 2021
+*   Assignment:     CSE 321 Project 1, Fall 2021
 *
-*   Inputs:
+*   Inputs:         
 *
-*   Outputs:
+*   Outputs:        
 *
-*   Constraints:
+*   Constraints:    
 *
 *   External Sources:
 *
