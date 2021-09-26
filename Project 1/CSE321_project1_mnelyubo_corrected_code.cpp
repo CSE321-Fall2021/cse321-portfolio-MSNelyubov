@@ -1,22 +1,30 @@
 /******************************************************************************
-*   File Name:      
+*   File Name:      CSE321_project1_mnelyubo_corrected_code.cpp
 *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
-*   Date Created:   
-*   Last Modified:  
-*   Purpose:        This file is the standard template that will be used as the
-*                     basis for all subsequent .cpp files for CSE321.
+*   Date Created:   09/23/2021
+*   Last Modified:  09/26/2021
+*   Purpose:        
+*       This program creates a thread to operate an LED.  Default behavior 
+*         without usage of inputs will cause the LED to cycle between ON and OFF
+*         states with the ON state lasting 2000 ms and the OFF state lasting 
+*         500 ms.
+*       Pressing and releasing Button 1 will toggle the board between states of
+*         continuing to cycle the LED and pausing at the end of the current 
+*         cycle until the button is pressed and released again.  The next cycle
+*         will begin immediately after Button 1 is released while the board is
+*         paused.
 *
 *   Functions:      
 *
 *   Assignment:     CSE 321 Project 1, Fall 2021
 *
-*   Inputs:         
+*   Inputs:         Blue User button (BUTTON1)
 *
-*   Outputs:        
+*   Outputs:        Blue LED  (LED2)
 *
-*   Constraints:    
+*   Constraints:    N/A
 *
-*   External Sources:
+*   External Sources:   N/A
 *
 ******************************************************************************/
 
