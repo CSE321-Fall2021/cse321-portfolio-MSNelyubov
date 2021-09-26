@@ -25,55 +25,56 @@
 // Create a thread to drive an LED to have an on time of _______ms and off time
 // _______ms
 
-Thread controller;
-//what is a thread?? eh like something tottaly Real time like. 
+Thread controller;   //
 
-void saveTheWorld(); //someone has to right?
+void oscillateLED(); //someone has to right?
 
-void live_or_die();
-void wrong_or_not();
+void button1PushDownBehavior();
+void button1OpenBehavior();
 
-DigitalOut fire(LED2); // establish blue led as an output
-InterruptIn cherish(BUTTON1);
+DigitalOut fire(LED2);          //establish blue led as an output
+InterruptIn cherish(BUTTON1);   //establish interrupt handler from Button 1 input (B1 USER)
 
-int zombie = 0;
-int unicorn = 0;
+int buttonPressed = 0;
+int oscillateLED_L = 0;
 
 int main() {
     // start the allowed execution of the thread
     printf("----------------START----------------\n");
 	printf("Starting state of thread: %d\n", controller.get_state());
-    controller.start(saveTheWorld);
+    controller.start(oscillateLED);
 	printf("State of thread right after start: %d\n", controller.get_state());
-    cherish.rise(live_or_die);
-	cherish.fall(wrong_or_not);
+    
+    cherish.rise(button1PushDownBehavior);    //set the button to 
+	cherish.fall(button1OpenBehavior);
     return 0;
 }
 
-// make the handler
-void saveTheWorld() {
+// 
+void oscillateLED() {
     while (true) {
-        if(unicorn==0){
+        if(oscillateLED_L==0){
             fire = !fire;
-            printf("What did I just do????"); //you do need to update the print statement to be correct
+            printf("LED switched to state: HIGH\tu %d\t z %d\r\n", oscillateLED_L, buttonPressed); //you do need to update the print statement to be correct
             thread_sleep_for(2000); //Thread_sleep is a time delay function, causes a 2000 unit delay
             fire = !fire;
-            printf("Did I do it again??????"); 
+            printf("LED switched to state: low \tu %d\t z %d\r\n", oscillateLED_L, buttonPressed);
             thread_sleep_for(500); //Thread_sleep is a time delay function, causes a 500 unit delay
         }
     }
 }
 
-void live_or_die() {
-// togle the state of the thread
-// set flag...this is where we end
-    zombie=1;
+
+// this function is only triggered upon button 1 being pressed
+// this function enables the behavior of button1OpenBehavior
+void button1PushDownBehavior() {
+    buttonPressed=1;
 }
 
-void wrong_or_not() {
-    if (zombie==1){
-        unicorn++; 
-        unicorn %= 2;
-        zombie=0;
+void button1OpenBehavior() {
+    if (buttonPressed==1){
+        oscillateLED_L++; 
+        oscillateLED_L %= 2;
+        buttonPressed=0;
     }
 }
