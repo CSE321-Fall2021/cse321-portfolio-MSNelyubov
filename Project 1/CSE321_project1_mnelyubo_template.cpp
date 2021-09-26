@@ -16,12 +16,13 @@
 *
 *   Constraints:    
 *
-*   External Sources:
+*   References:     
 *
 ******************************************************************************/
 
 #include <mbed.h>
 
+/*
 int main() {
 
   while(1) {
@@ -30,3 +31,4 @@ int main() {
 
   return 0;     //exit on clean execution
 }
+*/

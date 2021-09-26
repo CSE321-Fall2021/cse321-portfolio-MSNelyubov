@@ -24,48 +24,66 @@
 *
 *   Constraints:    N/A
 *
-*   External Sources:   N/A
+*   References:     N/A
 *
 ******************************************************************************/
 
+
 #include "mbed.h"
 
-// Create a thread to drive an LED to have an on time of _______ms and off time
-// _______ms
 
-Thread controller;   //
+Thread controller;  // Create a thread to drive an LED to have an 
+                    //on time of 2000 ms and off time of 500 ms
 
-void oscillateLED(); //someone has to right?
 
+//declare internal functions
+void cycleLedState();
 void button1PushDownBehavior();
 void button1OpenBehavior();
 
-DigitalOut fire(LED2);          //establish blue led as an output
-InterruptIn cherish(BUTTON1);   //establish interrupt handler from Button 1 input (B1 USER)
 
-int buttonPressed = 0;
+//initialize I/O
+DigitalOut outputLED(LED2);          //establish blue led as an output
+InterruptIn userButton1(BUTTON1);   //establish interrupt handler from 
+                                      //Button 1 input (B1 USER)
+
+
+//internal variables
+
+//Indicates the state of the userButton1 input. 
+//0 -> button is not pressed
+//1 -> button is pressed
+int buttonPressed  = 0;
+
+//Active low indicator for whether or not a new cycle of
+//turning the LED on and off should be undertaken. 
+//0 -> begin a new cycle
+//1 -> do not begin a new cycle
 int oscillateLED_L = 0;
+
 
 int main() {
     // start the allowed execution of the thread
     printf("----------------START----------------\n");
 	printf("Starting state of thread: %d\n", controller.get_state());
-    controller.start(oscillateLED);
+    controller.start(cycleLedState);
 	printf("State of thread right after start: %d\n", controller.get_state());
     
-    cherish.rise(button1PushDownBehavior);    //set the button to 
-	cherish.fall(button1OpenBehavior);
+    //map handlers for when the button is pressed and released
+    userButton1.rise(button1PushDownBehavior);
+	userButton1.fall(button1OpenBehavior);
     return 0;
 }
 
+
 // 
-void oscillateLED() {
+void cycleLedState() {
     while (true) {
         if(oscillateLED_L==0){
-            fire = !fire;
+            outputLED = !outputLED;
             printf("LED switched to state: HIGH\tu %d\t z %d\r\n", oscillateLED_L, buttonPressed); //you do need to update the print statement to be correct
             thread_sleep_for(2000); //Thread_sleep is a time delay function, causes a 2000 unit delay
-            fire = !fire;
+            outputLED = !outputLED;
             printf("LED switched to state: low \tu %d\t z %d\r\n", oscillateLED_L, buttonPressed);
             thread_sleep_for(500); //Thread_sleep is a time delay function, causes a 500 unit delay
         }
