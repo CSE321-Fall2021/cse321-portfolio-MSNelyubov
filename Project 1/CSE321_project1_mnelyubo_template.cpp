@@ -22,13 +22,12 @@
 
 #include <mbed.h>
 
-/*
+
 int main() {
 
   while(1) {
 
   }
 
-  return 0;     //exit on clean execution
+  return 0;
 }
-*/
