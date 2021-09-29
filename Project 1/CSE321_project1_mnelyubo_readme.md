@@ -1,20 +1,27 @@
 -------------------
 About
 -------------------
-Project Description: This project contains a standard template file that will be used as the basis for all C++ files generated for CSE321 by Misha Nelyubov, a C++ source file to oscillate the blinking of a light on a Nucleo L4R5ZI, and a PowerShell script to push files from the working Mbed Studio directory into the Git version control directory.
+Project Description: This project contains 
+- CSE321_project1_mnelyubo_template.cpp will be used as the basis for all C++ files generated for CSE321 by Misha Nelyubov
+- CSE321_project1_mnelyubo_corrected_code.cpp is a program written in C++ to oscillate the blinking of a light on a Nucleo L4R5ZI
+- push-ToGitRepo.ps1 is a PowerShell script to push files from the working Mbed Studio directory into the Git version control directory
 
 
-Contribitor List: Misha Nelyubov (mnelyubo@buffalo.edu)
+Contribitor List:
+- Misha Nelyubov (mnelyubo@buffalo.edu)
 
 
 --------------------
 Features
 --------------------
 
+
 --------------------
 Required Materials
 --------------------
 - Nucleo L4R5ZI
+- Mbed Studio (https://os.mbed.com/studio/)
+
 
 --------------------
 Resources and References
@@ -24,7 +31,13 @@ Resources and References
 --------------------
 Getting Started
 --------------------
-This section will describe the general setup
+# Clone the repository locally
+# Open the repository with Mbed Studio
+# Select "Project 1" as the Active program
+# Select Nucleo L4R5ZI as the Target 
+
+
+
 
 --------------------
 p1_code_provided.cpp:
@@ -49,6 +62,19 @@ API and Built In Elements Used
 ----------
 Custom Functions
 ----------
+
+
+
+- cycleLedState:
+-- This function runs continously once called.  Whenever the global variable oscillateLED_L is low, this function will begin a cycle in which it turns on an LED for 2000 ms and then turns it off for 500 ms before repeating this behavior.
+-- Inputs:
+--- None
+
+- button1PushDownBehavior:
+
+- button1OpenBehavior:
+
+
 
 saveTheWorldssss:
 	Does savomg ps somentjinmg. 
