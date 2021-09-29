@@ -1,8 +1,10 @@
 -------------------
 About
 -------------------
-Project Description: 
-Contribitor List:
+Project Description: This project contains a standard template file that will be used as the basis for all C++ files generated for CSE321 by Misha Nelyubov, a C++ source file to oscillate the blinking of a light on a Nucleo L4R5ZI, and a PowerShell script to push files from the working Mbed Studio directory into the Git version control directory.
+
+
+Contribitor List: Misha Nelyubov (mnelyubo@buffalo.edu)
 
 
 --------------------
@@ -12,7 +14,7 @@ Features
 --------------------
 Required Materials
 --------------------
--Nucleo L4R5ZI
+- Nucleo L4R5ZI
 
 --------------------
 Resources and References
