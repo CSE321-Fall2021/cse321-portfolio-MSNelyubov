@@ -11,37 +11,37 @@ Contribitor List:
 - Misha Nelyubov (mnelyubo@buffalo.edu)
 
 
---------------------
+-------------------
 Features
---------------------
+-------------------
 
 
---------------------
+-------------------
 Required Materials
---------------------
+-------------------
 - Nucleo L4R5ZI
 - Mbed Studio (https://os.mbed.com/studio/)
 
 
---------------------
+-------------------
 Resources and References
---------------------
+-------------------
 
 
---------------------
+-------------------
 Getting Started
---------------------
-# Clone the repository locally
-# Open the repository with Mbed Studio
-# Select "Project 1" as the Active program
-# Select Nucleo L4R5ZI as the Target 
+-------------------
+1. Clone the repository locally
+2. Open the repository with Mbed Studio
+3. Select "Project 1" as the Active program
+4. Select Nucleo L4R5ZI as the Target 
 
 
 
 
---------------------
+-------------------
 p1_code_provided.cpp:
---------------------
+-------------------
  
 This file has lots of things. There is a os typle tool used to create periodic events with a periepherial. The name of the file and the contents in here will be entirely updated.
  
@@ -49,7 +49,7 @@ This is totally not bare metal since there are some cool tools used. Those tools
 
 
 ----------
-Things Declared
+Global Declarations
 ----------
 Some variables, functions, objects, and APIs are used to make tyhings work. 
 
@@ -66,9 +66,9 @@ Custom Functions
 
 
 - cycleLedState:
--- This function runs continously once called.  Whenever the global variable oscillateLED_L is low, this function will begin a cycle in which it turns on an LED for 2000 ms and then turns it off for 500 ms before repeating this behavior.
--- Inputs:
---- None
+    - This function runs continously once called.  Whenever the global variable oscillateLED_L is low, this function will begin a cycle in which it turns on an LED for 2000 ms and then turns it off for 500 ms before repeating this behavior.
+    - Inputs:
+        - None
 
 - button1PushDownBehavior:
 
