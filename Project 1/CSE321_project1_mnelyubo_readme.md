@@ -66,13 +66,17 @@ Global Declarations
 ----------
 API and Built-In Elements Used
 ----------
-
+- mbed.h
+    - Thread
+        - used to handle concurrent scheduled events with the operating system
+    - DigitalOut
+        - used to output a high or low signal to the onboard blue LED
+    - InterruptIn
+        - used to read input from the onboard User button 1
 
 ----------
 Functions
 ----------
-
-
 
 - cycleLedState:
     - This function runs continously once called.  Whenever the global variable oscillateLED_L is low, this function will begin a cycle in which it turns on an LED for 2000 ms and then turns it off for 500 ms before repeating this behavior.

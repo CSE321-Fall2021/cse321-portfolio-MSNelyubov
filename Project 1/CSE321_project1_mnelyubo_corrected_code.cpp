@@ -45,7 +45,7 @@ void button1OpenBehavior();
 
 //initialize I/O
 DigitalOut outputLED(LED2);          //establish blue led as an output
-InterruptIn userButton1(BUTTON1);   //establish interrupt handler from Button 1 input (B1 USER)
+InterruptIn userButton1(BUTTON1);    //establish interrupt handler from Button 1 input (B1 USER)
 
 
 //internal variables
