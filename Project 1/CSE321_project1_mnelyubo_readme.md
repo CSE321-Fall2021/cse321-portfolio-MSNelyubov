@@ -51,16 +51,25 @@ This is totally not bare metal since there are some cool tools used. Those tools
 ----------
 Global Declarations
 ----------
-Some variables, functions, objects, and APIs are used to make tyhings work. 
+- Functions
+    - cycleLedState
+    - button1PushDownBehavior
+    - button1OpenBehavior
 
-There are like 8 of these plus that header .h file.
+- Variables
+    - controller
+    - outputLED
+    - userButton1
+    - buttonPressed
+    - oscillateLED_L
 
 ----------
-API and Built In Elements Used
+API and Built-In Elements Used
 ----------
 
+
 ----------
-Custom Functions
+Functions
 ----------
 
 
@@ -69,6 +78,8 @@ Custom Functions
     - This function runs continously once called.  Whenever the global variable oscillateLED_L is low, this function will begin a cycle in which it turns on an LED for 2000 ms and then turns it off for 500 ms before repeating this behavior.
     - Inputs:
         - None
+    - Global variables referenced:
+        - 
 
 - button1PushDownBehavior:
 
@@ -82,5 +93,3 @@ saveTheWorldssss:
 		None
 	Globally referenced things used:
 	Unicorns and fire, pringtf isglobal too
-
-

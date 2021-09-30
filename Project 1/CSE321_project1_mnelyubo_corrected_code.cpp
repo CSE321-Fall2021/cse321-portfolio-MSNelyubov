@@ -24,7 +24,8 @@
 *
 *   Constraints:    N/A
 *
-*   References:     N/A
+*   References:     
+*                   https://www.cs.utah.edu/~germain/PPS/Topics/commenting.html
 *
 ******************************************************************************/
 
@@ -44,13 +45,12 @@ void button1OpenBehavior();
 
 //initialize I/O
 DigitalOut outputLED(LED2);          //establish blue led as an output
-InterruptIn userButton1(BUTTON1);   //establish interrupt handler from 
-                                      //Button 1 input (B1 USER)
+InterruptIn userButton1(BUTTON1);   //establish interrupt handler from Button 1 input (B1 USER)
 
 
 //internal variables
 
-//Indicates the state of the userButton1 input. 
+//Active high indicator for the state of the userButton1 input. 
 //0 -> button is not pressed
 //1 -> button is pressed
 int buttonPressed  = 0;
@@ -59,11 +59,12 @@ int buttonPressed  = 0;
 //turning the LED on and off should be undertaken. 
 //0 -> begin a new cycle
 //1 -> do not begin a new cycle
+//The system will begin in a blinking state
 int oscillateLED_L = 0;
 
 
 int main() {
-    // start the allowed execution of the thread
+    // start the execution of the LED cycling thread
     printf("----------------START----------------\n");
 	printf("Starting state of thread: %d\n", controller.get_state());
     controller.start(cycleLedState);
@@ -76,31 +77,80 @@ int main() {
 }
 
 
-// 
+/**
+* void cycleLedState ()
+* 
+* Summary of the function:
+*    This function cycles the onboard LED between On and off states if oscillateLED_L is currently set to oscillate.
+*
+* Parameters:   None
+*
+* Return value: None
+*
+* Outputs:      The state of the blue LED is temporarily modified during executions of this function. 
+*
+* Description:  
+*    The function spin tests until oscillateLED_L has a value of 0
+*    Whenever oscillateLED_L is 0, the LED will switch on for 2000 ms then off for 500 ms.
+*    After this cycle, the system resumes testing for the condition to begin the cycle again
+*
+*/
 void cycleLedState() {
     while (true) {
-        if(oscillateLED_L==0){
+        if(oscillateLED_L == 0){
             outputLED = !outputLED;
-            printf("LED switched to state: HIGH\tu %d\t z %d\r\n", oscillateLED_L, buttonPressed); //you do need to update the print statement to be correct
+            printf("LED switched to state: HIGH\n");
             thread_sleep_for(2000); //Thread_sleep is a time delay function, causes a 2000 unit delay
             outputLED = !outputLED;
-            printf("LED switched to state: low \tu %d\t z %d\r\n", oscillateLED_L, buttonPressed);
+            printf("LED switched to state: low \n");
             thread_sleep_for(500); //Thread_sleep is a time delay function, causes a 500 unit delay
         }
     }
 }
 
 
-// this function is only triggered upon button 1 being pressed
-// this function enables the behavior of button1OpenBehavior
+/**
+* void button1PushDownBehavior ()
+* 
+* Summary of the function:
+*    This function enables the next call to button1OpenBehavior to take effect.
+*
+* Parameters:   None
+*
+* Return value: None
+*
+* Description:
+*    This function sets the state of buttonPressed to high in order to 
+*    validate execution for the next instance of the function button1OpenBehavior.
+*    Note: this value is not a mutex and may end up validating more than a single instance of button1OpenBehavior
+*/
 void button1PushDownBehavior() {
     buttonPressed=1;
 }
 
+/**
+* void button1OpenBehavior ()
+*
+* Summary of the function:
+*    This function is triggered at the end of an button click. 
+*    It toggles the state of whether or not the system output LED will continue blinking.
+*
+* Parameters:   None
+*
+* Return value: None
+*
+* Description:
+*    This function will only make any changes if a button press event was first registered into the variable buttonPressed.
+*    A mutex is NOT used to ensure that only a single modifying instance of this function can be triggered by a falling edge.
+*    This function will flip the value of oscillateLED_L between 1 and 0 with each call to the function.
+*    This function will clear the value of buttonPressed back to zero at the end of its execution.
+*    The current cycle of LED blinking will complete before the effect of this function is observed.
+*
+*/
 void button1OpenBehavior() {
-    if (buttonPressed==1){
+    if (buttonPressed == 1){
         oscillateLED_L++; 
-        oscillateLED_L %= 2;
+        oscillateLED_L%=2;
         buttonPressed=0;
     }
 }
