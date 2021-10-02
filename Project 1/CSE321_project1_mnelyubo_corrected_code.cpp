@@ -100,9 +100,12 @@ void cycleLedState() {
         if(oscillateLED_L == 0){
             outputLED = !outputLED;
             printf("LED switched to state: HIGH\n");
+
             thread_sleep_for(2000); //Thread_sleep is a time delay function, causes a 2000 unit delay
+
             outputLED = !outputLED;
             printf("LED switched to state: low \n");
+
             thread_sleep_for(500); //Thread_sleep is a time delay function, causes a 500 unit delay
         }
     }
@@ -113,7 +116,7 @@ void cycleLedState() {
 * void button1PushDownBehavior ()
 * 
 * Summary of the function:
-*    This function enables the next call to button1OpenBehavior to take effect.
+*    This function enables the next call to button1OpenBehavior to switch the state of the system between oscillating and resting.
 *
 * Parameters:   None
 *
@@ -133,7 +136,7 @@ void button1PushDownBehavior() {
 *
 * Summary of the function:
 *    This function is triggered at the end of an button click. 
-*    It toggles the state of whether or not the system output LED will continue blinking.
+*    This function toggles the state of whether or not the system output LED will continue to go through blinking cycles.
 *
 * Parameters:   None
 *

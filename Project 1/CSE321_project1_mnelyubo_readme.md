@@ -40,7 +40,7 @@ Getting Started
 
 
 -------------------
-p1_code_provided.cpp:
+CSE321_project1_mnelyubo_corrected_code.cpp:
 -------------------
  
 This file has lots of things. There is a os typle tool used to create periodic events with a periepherial. The name of the file and the contents in here will be entirely updated.
@@ -57,21 +57,25 @@ Global Declarations
     - button1OpenBehavior
 
 - Variables
-    - controller
-    - outputLED
-    - userButton1
     - buttonPressed
+        - Active high indicator for the state of the userButton1 input
     - oscillateLED_L
+        - Active low indicator for whether or not a new cycle of turning the LED on and off should be undertaken
 
+- API objects (described further in "API and Built-In Elements Used")
+    - controller  (Thread)
+    - outputLED   (DigitalOut)
+    - userButton1 (InterruptIn)
 ----------
 API and Built-In Elements Used
 ----------
 - mbed.h
-    - Thread
+    - Thread controller
         - used to handle concurrent scheduled events with the operating system
-    - DigitalOut
+        - allows cycling of the LED states and interrupting for input changes
+    - DigitalOut outputLED
         - used to output a high or low signal to the onboard blue LED
-    - InterruptIn
+    - InterruptIn userButton1
         - used to read input from the onboard User button 1
 
 ----------
@@ -82,18 +86,34 @@ Functions
     - This function runs continously once called.  Whenever the global variable oscillateLED_L is low, this function will begin a cycle in which it turns on an LED for 2000 ms and then turns it off for 500 ms before repeating this behavior.
     - Inputs:
         - None
-    - Global variables referenced:
-        - 
+    - Outputs:
+        - the state of LED2 is toggled during this function 
+    - Global variables accessed:
+        - outputLED, oscillateLED_L
+    - Global variables modified:
+        - outputLED
+
 
 - button1PushDownBehavior:
+    - This function enables the next call to button1OpenBehavior to switch the state of the system between oscillating and resting.
+    - Inputs:
+        - None
+    - Outputs:
+        -  None
+    - Global variables accessed:
+        - buttonPressed
+    - Global variables modified:
+        - buttonPressed
+
 
 - button1OpenBehavior:
-
-
-
-saveTheWorldssss:
-	Does savomg ps somentjinmg. 
-	Inputs:
-		None
-	Globally referenced things used:
-	Unicorns and fire, pringtf isglobal too
+    - This function is triggered at the end of an button click. 
+    - This function toggles the state of whether or not the system output LED will continue to go through blinking cycles.
+    - Inputs:
+        - None
+    - Outputs:
+        -  None
+    - Global variables accessed:
+        - buttonPressed, oscillateLED_L
+    - Global variables modified:
+        - buttonPressed, oscillateLED_L
