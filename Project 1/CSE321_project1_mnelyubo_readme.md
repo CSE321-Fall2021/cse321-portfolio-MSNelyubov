@@ -9,7 +9,7 @@ Project Description: This project contains
 
 Contribitor List:
 - Misha Nelyubov (mnelyubo@buffalo.edu)
-
+- Dr. Jennifer Winikus (jwinikus@buffalo.edu)
 
 -------------------
 Features
