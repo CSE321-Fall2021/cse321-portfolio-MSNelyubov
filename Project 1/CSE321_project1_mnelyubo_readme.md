@@ -64,7 +64,7 @@ This is totally not bare metal since there are some cool tools used. Those tools
 ----------
 Global Declarations
 ----------
-- Functions
+- Functions (described further in "Functions")
     - cycleLedState
     - button1PushDownBehavior
     - button1OpenBehavior
