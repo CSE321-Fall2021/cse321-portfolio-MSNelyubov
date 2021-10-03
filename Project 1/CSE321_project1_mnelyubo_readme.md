@@ -64,7 +64,7 @@ This is totally not bare metal since there are some cool tools used. Those tools
 ----------
 Global Declarations
 ----------
-- Functions (described further in "Functions")
+- Functions (described further in "Custom Functions")
     - cycleLedState
     - button1PushDownBehavior
     - button1OpenBehavior
@@ -96,7 +96,7 @@ API and Built-In Elements Used
         - calls function button1OpenBehavior when released after being pressed down
 
 ----------
-Functions
+Custom Functions
 ----------
 
 - cycleLedState:
