@@ -23,10 +23,11 @@
 *
 ******************************************************************************#>
 
+$gitPathRoot = '~\Documents\GitHub\cse321-portfolio-MSNelyubov\Project 1'
+
 $ignoreList = Get-Content -Path $PSScriptRoot\.gitignore | where {$_.Length -gt 0}
 
 $copyItemList = @()
-
 
 
 ls $PSScriptRoot | foreach {
@@ -45,9 +46,6 @@ ls $PSScriptRoot | foreach {
     }
 }
 
-$gitPathRoot = '~\Documents\GitHub\cse321-portfolio-MSNelyubov\Project 1'
-
 $copyItemList | foreach {
     Copy-Item -Path $_ -Destination ($_.Replace($PSScriptRoot, $gitPathRoot)) -Verbose
 }
-
