@@ -3,12 +3,11 @@
 *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
 *   Date Created:   
 *   Last Modified:  
-*   Purpose:        This file is the standard template that will be used as the
-*                     basis for all subsequent .cpp files for CSE321.
+*   Purpose:        
 *
 *   Functions:      
 *
-*   Assignment:     CSE 321 Project 1, Fall 2021
+*   Assignment:     
 *
 *   Inputs:         
 *
