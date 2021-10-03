@@ -4,7 +4,7 @@ About
 Project Description: 
 
 This project contains the following files:
-- CSE321_project1_mnelyubo_template.cpp will be used as the basis for all C++ files generated for CSE321 by Misha Nelyubov
+- CSE321_project1_mnelyubo_template.cpp will be used as the basis for all C++ files written for CSE321 by Misha Nelyubov
 - CSE321_project1_mnelyubo_corrected_code.cpp is a program written in C++ to oscillate the blinking of a light on a Nucleo L4R5ZI
 - push-ToGitRepo.ps1 is a PowerShell script to push files from the working Mbed Studio directory into the Git version control directory
 
@@ -16,7 +16,9 @@ Contribitor List:
 -------------------
 Features
 -------------------
-The corrected code program uses threads and interrupts to handle scheduled execution based on real-world inputs to the system.
+The corrected code program 
+- uses threads and interrupts to handle scheduled execution based on real-world inputs to the system
+- switches between the states of turning an onboard LED on and off at regular intervals and pausing with the LED off until swapped back into the blinking mode
 
 
 -------------------
