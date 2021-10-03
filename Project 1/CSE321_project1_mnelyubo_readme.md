@@ -31,11 +31,12 @@ Resources and References
 -------------------
 Getting Started
 -------------------
-1. Clone the repository locally
+1. Clone the git repository locally
 2. Open the repository with Mbed Studio
-3. Select "Project 1" as the Active program
-4. Select Nucleo L4R5ZI as the Target 
-
+3. Select "Project 1" as the Active program in Mbed studio
+4. Connect the Nucleo-L4R5ZI to your computer via USB cable
+5. Select Nucleo-L4R5ZI as the Target in Mbed studio
+6. Click on the play button labeled "Run Program" to begin executing the code on the Nucleo
 
 
 
@@ -95,7 +96,7 @@ Functions
 
 
 - button1PushDownBehavior:
-    - This function enables the next call to button1OpenBehavior to switch the state of the system between oscillating and resting.
+    - This function enables the next call to button1OpenBehavior to switch the state of the LED behavior between oscillating and resting.
     - Inputs:
         - None
     - Outputs:
@@ -109,6 +110,7 @@ Functions
 - button1OpenBehavior:
     - This function is triggered at the end of an button click. 
     - This function toggles the state of whether or not the system output LED will continue to go through blinking cycles.
+        - Blinking will not necessarily be stopped immediately: the current cycle will complete before a pause will take effect.
     - Inputs:
         - None
     - Outputs:
