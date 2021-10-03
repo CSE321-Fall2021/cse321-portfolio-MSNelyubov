@@ -99,17 +99,18 @@ int main() {
 *
 */
 void cycleLedState() {
-    while (true) {
-        if(oscillateLED_L == 0){
+    while (true) {                                      //run continuously
+        if(oscillateLED_L == 0){                        //if the oscillate LED variable is set to instruct execution, perform a cycle of turning the LED on and off
+
             outputLED = !outputLED;
             printf("LED switched to state: HIGH\n");
 
-            thread_sleep_for(2000); //Thread_sleep is a time delay function, causes a 2000 unit delay
+            thread_sleep_for(2000);                     //Thread_sleep is a time delay function, causes a 2000 unit delay
 
             outputLED = !outputLED;
             printf("LED switched to state: low \n");
 
-            thread_sleep_for(500); //Thread_sleep is a time delay function, causes a 500 unit delay
+            thread_sleep_for(500);                      //Thread_sleep is a time delay function, causes a 500 unit delay
 
             //if the button was presse during the course of an execution cycle, write to 
             //the console the confirmation that the button will not proceed to another cycle
