@@ -15,6 +15,9 @@
 *         paused.
 *
 *   Functions:      
+*           void cycleLedState()
+*           void button1PushDownBehavior()
+*           void button1OpenBehavior()
 *
 *   Assignment:     CSE 321 Project 1, Fall 2021
 *
@@ -107,6 +110,12 @@ void cycleLedState() {
             printf("LED switched to state: low \n");
 
             thread_sleep_for(500); //Thread_sleep is a time delay function, causes a 500 unit delay
+
+            //if the button was presse during the course of an execution cycle, write to 
+            //the console the confirmation that the button will not proceed to another cycle
+            if(oscillateLED_L == 1){
+                printf("Button pressed.  Delaying execution of next cycle.\n");
+            }
         }
     }
 }
