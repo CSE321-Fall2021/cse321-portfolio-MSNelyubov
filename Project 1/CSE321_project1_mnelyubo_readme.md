@@ -14,19 +14,26 @@ Contribitor List:
 -------------------
 Features
 -------------------
-
+This program uses threads and interrupts to handle scheduled execution based on real-world inputs to the system.
 
 -------------------
 Required Materials
 -------------------
 - Nucleo L4R5ZI
+    - Hardware on which to execute code
+- USB 2.0 A to USB 2.0 Micro B cable
+    - Interface between computer and Nucleo
 - Mbed Studio (https://os.mbed.com/studio/)
-
+    - IDE to develop and deploy code
 
 -------------------
 Resources and References
 -------------------
-
+- README structure:
+    - https://libraries.ou.edu/content/how-make-readmetxt-file
+    - https://gist.github.com/akashnimare/7b065c12d9750578de8e705fb4771d2f
+- C comment structure:
+    - https://www.cs.utah.edu/~germain/PPS/Topics/commenting.html 
 
 -------------------
 Getting Started
@@ -75,9 +82,13 @@ API and Built-In Elements Used
         - used to handle concurrent scheduled events with the operating system
         - allows cycling of the LED states and interrupting for input changes
     - DigitalOut outputLED
+        - configures the GPIO pin of the LED to be active as an output
         - used to output a high or low signal to the onboard blue LED
     - InterruptIn userButton1
+        - configures the GPIO pin of the button to be active as an input
         - used to read input from the onboard User button 1
+        - calls function button1PushDownBehavior when pressed down 
+        - calls function button1OpenBehavior when released after being pressed down
 
 ----------
 Functions
