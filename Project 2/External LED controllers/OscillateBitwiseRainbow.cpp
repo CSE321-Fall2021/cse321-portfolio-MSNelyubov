@@ -101,19 +101,20 @@ int main(){
         {1,1,1,1,1}
     };
 
-    for(int i = 0; true; i = (i+1)%stageCount){
+    for(int stage = 0; true; stage = (stage+1)%stageCount){
         //enable outputs of the given stage
-        for(int j = 0; j<pinArrayLen; j++){
-            if(stages[i][j])
-                GPIOC->ODR |= pins[j];
+        printf("Switching to stage %d\n", stage);
+        for(int pin = 0; pin<pinArrayLen; pin++){
+            if(stages[stage][pin])
+                GPIOC->ODR |= pins[pin];
         }
         
         //pause for the designated time at the given stage
         thread_sleep_for(PHASE_TIME);
         
         //set ALL pins to low
-        for(int j = 0; j<pinArrayLen; j++){
-            GPIOC->ODR &= ~pins[j];
+        for(int pin = 0; pin<pinArrayLen; pin++){
+            GPIOC->ODR &= ~pins[pin];
         }
 
     }
