@@ -39,15 +39,8 @@
 
 //CSE321_LCD lcdObject(COL,ROW,);
 
-/*int main(){
 
-    while (true)
-    {
-    
-    }
 
-}
-*/
 
 #include <cstdio>
 void isr_abc(void);
