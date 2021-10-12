@@ -105,12 +105,6 @@ int main() {
     return 0;
 }
 
-//   // or 6
-//   if (row==1){
-//     printf("found 3\n");
-//   } else {
-// //    printf("found 6\n");
-//  }
 
 void isr_abc(void) {printf("found a, b, c, or d. ll: %d  row: %d\n",logLine++, row);}
 void osr_abc(void) {printf("open  a, b, c, or d. ll: %d  row: %d\n",logLine++, row);}
