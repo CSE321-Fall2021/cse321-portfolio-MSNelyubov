@@ -55,9 +55,9 @@ void osr_147(void);
 
 char keyValues[][5] = {"abcd","369#","2580","147*"};
 
-int row = 0;
-
-int logLine = 0;
+int row = 0;            //the row currently being supplied a non-zero voltage
+int logLine = 0;        //debugging utility to notify how many lines have been printed for understanding otherwise identical output
+int buttonPressed = 0;  //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
 
 InterruptIn rowLL(PC_0);
 InterruptIn rowCL(PC_3);
