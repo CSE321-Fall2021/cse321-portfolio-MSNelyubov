@@ -48,18 +48,18 @@
 
 #include <cstdio>
 
-////declare individual interrupt handler events
+////declare individual interrupt handler events for each column
 //declare rising edge interrupt handler events
-void isr_abc(void);
-void isr_369(void);
-void isr_258(void);
-void isr_147(void);
+void rising_isr_abc(void);
+void rising_isr_369(void);
+void rising_isr_258(void);
+void rising_isr_147(void);
 
 //declare falling edge interrupt handler events
-void osr_abc(void);
-void osr_369(void);
-void osr_258(void);
-void osr_147(void);
+void falling_isr_abc(void);
+void falling_isr_369(void);
+void falling_isr_258(void);
+void falling_isr_147(void);
 
 //declare general handler for Matrix keypad input events
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row);
@@ -75,10 +75,10 @@ char charPressed = '\0';    //the character on the input matrix keypad which is 
                             //undefined behavior when more than one key is pressed at the same time
 
 
-InterruptIn rowLL(PC_0);
-InterruptIn rowCL(PC_3);
-InterruptIn rowCR(PC_1);
-InterruptIn rowRR(PC_4);
+InterruptIn rowLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column
+InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column
+InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column
+InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column
 
 int main() {
 
@@ -89,15 +89,15 @@ int main() {
 
     printf("==Initialized==\n");
 
-    rowLL.rise(&isr_abc);   //assign interrupt handler for a rising edge event from the row containing buttons a,b,c,d
-    rowCL.rise(&isr_369);   //assign interrupt handler for a rising edge event from the row containing buttons 3,6,9,#
-    rowCR.rise(&isr_258);   //assign interrupt handler for a rising edge event from the row containing buttons 2,5,8,0
-    rowRR.rise(&isr_147);   //assign interrupt handler for a rising edge event from the row containing buttons 1,4,7,*
+    rowLL.rise(&rising_isr_abc);   //assign interrupt handler for a rising edge event from the column containing buttons a,b,c,d
+    rowCL.rise(&rising_isr_369);   //assign interrupt handler for a rising edge event from the column containing buttons 3,6,9,#
+    rowCR.rise(&rising_isr_258);   //assign interrupt handler for a rising edge event from the column containing buttons 2,5,8,0
+    rowRR.rise(&rising_isr_147);   //assign interrupt handler for a rising edge event from the column containing buttons 1,4,7,*
 
-    rowLL.fall(&osr_abc);   //assign interrupt handler for a falling edge event from the row containing buttons a,b,c,d
-    rowCL.fall(&osr_369);   //assign interrupt handler for a falling edge event from the row containing buttons 3,6,9,#
-    rowCR.fall(&osr_258);   //assign interrupt handler for a falling edge event from the row containing buttons 2,5,8,0
-    rowRR.fall(&osr_147);   //assign interrupt handler for a falling edge event from the row containing buttons 1,4,7,*
+    rowLL.fall(&falling_isr_abc);   //assign interrupt handler for a falling edge event from the column containing buttons a,b,c,d
+    rowCL.fall(&falling_isr_369);   //assign interrupt handler for a falling edge event from the column containing buttons 3,6,9,#
+    rowCR.fall(&falling_isr_258);   //assign interrupt handler for a falling edge event from the column containing buttons 2,5,8,0
+    rowRR.fall(&falling_isr_147);   //assign interrupt handler for a falling edge event from the column containing buttons 1,4,7,*
 
     while (1) {
 
@@ -134,17 +134,18 @@ int main() {
 }
 
 
-void isr_abc(void) {buttonPressed = 1;printf("found %c. ll: %d\n",keyValues[0][row],logLine++);}
-void osr_abc(void) {buttonPressed = 0;printf("lost  %c. ll: %d\n",keyValues[0][row],logLine++);}
-void isr_369(void) {buttonPressed = 1;printf("found %c. ll: %d\n",keyValues[1][row],logLine++);}
-void osr_369(void) {buttonPressed = 0;printf("lost  %c. ll: %d\n",keyValues[1][row],logLine++);}
-void isr_258(void) {buttonPressed = 1;printf("found %c. ll: %d\n",keyValues[2][row],logLine++);}
-void osr_258(void) {buttonPressed = 0;printf("lost  %c. ll: %d\n",keyValues[2][row],logLine++);}
-void isr_147(void) {buttonPressed = 1;printf("found %c. ll: %d\n",keyValues[3][row],logLine++);}
-void osr_147(void) {buttonPressed = 0;printf("lost  %c. ll: %d\n",keyValues[3][row],logLine++);}
+void rising_isr_abc(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,0,row);}
+void falling_isr_abc(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,0,row);}
+void rising_isr_369(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,1,row);}
+void falling_isr_369(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,1,row);}
+void rising_isr_258(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,2,row);}
+void falling_isr_258(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,2,row);}
+void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,3,row);}
+void falling_isr_147(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,3,row);}
 
 
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row){
+    buttonPressed = isRisingEdgeInterrupt;
     if(isRisingEdgeInterrupt)
         printf("press  %c. ll: %d\n",keyValues[column][row],logLine++);
 
