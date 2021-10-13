@@ -39,6 +39,18 @@
 #define RisingEdgeInterrupt 1
 #define FallingEdgeInterrupt 0
 
+//Associated column values with their respective character key value index in the matrix
+#define ColABC 0
+#define Col369 1
+#define Col258 2
+#define Col147 3
+#define MatrixDim 4
+
+// MatrixDim+1 used as second dimension because of null terminator in each string
+char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
+
+
+
 //LCD_5x10DOTS
 
 //CSE321_LCD lcdObject(COL,ROW,);
@@ -64,8 +76,8 @@ void falling_isr_147(void);
 //declare general handler for Matrix keypad input events
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row);
 
-
-char keyValues[][5] = {"dcba","#963","0852","*741"};
+//injection point for the controller to handle the input with respect to the system state
+void handleInputKey(char inputKey);
 
 int row = 0;                //the row currently being supplied a non-zero voltage
 int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
@@ -134,19 +146,26 @@ int main() {
 }
 
 
-void rising_isr_abc(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,0,row);}
-void falling_isr_abc(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,0,row);}
-void rising_isr_369(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,1,row);}
-void falling_isr_369(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,1,row);}
-void rising_isr_258(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,2,row);}
-void falling_isr_258(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,2,row);}
-void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,3,row);}
-void falling_isr_147(void) {handleMatrixButtonEvent(FallingEdgeInterrupt,3,row);}
+void rising_isr_abc(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  ColABC, row);}
+void falling_isr_abc(void){handleMatrixButtonEvent(FallingEdgeInterrupt, ColABC, row);}
+void rising_isr_369(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col369, row);}
+void falling_isr_369(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col369, row);}
+void rising_isr_258(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col258, row);}
+void falling_isr_258(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col258, row);}
+void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col147, row);}
+void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147, row);}
 
 
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row){
-    buttonPressed = isRisingEdgeInterrupt;
-    if(isRisingEdgeInterrupt)
-        printf("press  %c. ll: %d\n",keyValues[column][row],logLine++);
+    
+    buttonPressed = isRisingEdgeInterrupt;          //a rising edge interrupt occurs when a button is pressed.  
+                                                    //These are two separate variables because buttonPressed is global to control input polling.
 
+    if(isRisingEdgeInterrupt){
+        charPressed = keyValues[column][row];               //fetch the char value associated with the index that was retrieved
+        printf("key pressed: %c. log line: %d\n",charPressed, logLine++);
+        handleInputKey(charPressed);
+    }else{
+        charPressed = '\0';                                 //reset the char value to '\0' as the key has been released
+    }
 }
