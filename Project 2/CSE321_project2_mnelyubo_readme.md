@@ -50,20 +50,33 @@ TODO
 
 ## Custom Functions
 
+- Interrupt Handlers:
+    - The following set of functions are used as handlers for the rising and falling edge behaviors of keypad buttons.
+        - rising_isr_abc
+        - rising_isr_369
+        - rising_isr_258
+        - rising_isr_147
+        - falling_isr_abc
+        - falling_isr_369
+        - falling_isr_258
+        - falling_isr_147
+    - Triggers:
+        - The rising or falling edge of the respective column, corresponding to the name of the function.
+    - Inputs:
+        - None
+    - Outputs:
+        - None
+    - Global variables accessed:
+        - row
+    - Global variables modified:
+        - None
+    - Functions called:
+        - handleMatrixButtonEvent( )
+            - Input parameters to this function are whether or not the interrupt event was a rising or falling edge, the column of the event (interrupt handler function specific), and the row of the event (global variable)
 
 
-*               The following set of functions are used as handlers for the rising and falling edge behaviors of keypad buttons
-*               rising_isr_abc
-*               rising_isr_369
-*               rising_isr_258
-*               rising_isr_147
-*               falling_isr_abc
-*               falling_isr_369
-*               falling_isr_258
-*               falling_isr_147
-*               
-*   Assignment:     CSE321 Project 2
-*
+
+
 *   Inputs:         4x4 matrix array input buttons
 *
 *   Outputs:        Serial output, LCD display (TBD)
