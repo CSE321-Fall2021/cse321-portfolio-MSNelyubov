@@ -36,17 +36,37 @@ The main behavior of this code controls a Nucelo L4R5ZI to
 
 
 # Resources and References
-TODO
+- https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
 
 # Getting Started
 TODO
 
 # CSE321_project2_mnelyubo_main.cpp:
+This program takes inputs from a 4x4 matrix keypad to control a timer.  The timer mode and input/remaining
+time are output to a connected LCD (WIP).
+
+The main function of the program initializes the system by configuring a set of four GPIO pins as
+outputs to supply voltage to the keypad, assigning event handlers to the rising and falling edges 
+of input interrupts that are connected to the keypad, and setting the initial timer mode to input.
+
+After the initialization is complete, the main function cycles through the four output channels, 
+providing power to one channel at a time and proceeding to the next input after a short time interval 
+in which no input keystroke is detected.  This allows a fast response time to any of the 16 keys and 
+eliminates the opportunity for duplicate inputs to be detected due to a single key press.
 
 
 ## Global Declarations
 
 ## API and Built-In Elements Used
+- mbed.h
+    - InterruptIn objects (4) used to detect button presses on the matrix keypad
+- 1802.h
+    - Interface to LCD
+- cstdio
+    - Used to printf from interrupts as a temporary output channel until the LCD is configured
+- ctime
+- string
+
 
 ## Custom Functions
 
@@ -71,8 +91,59 @@ TODO
     - Global variables modified:
         - None
     - Functions called:
-        - handleMatrixButtonEvent( )
+        - handleMatrixButtonEvent()
             - Input parameters to this function are whether or not the interrupt event was a rising or falling edge, the column of the event (interrupt handler function specific), and the row of the event (global variable)
+
+
+- handleMatrixButtonEvent
+    This function converts an input event type, row, and column received 
+    from an ISR handler into the character that is represented by that 
+    button press and stores that character to the global variable charPressed.
+    - Inputs: 
+        - int isRisingEdgeInterrupt - whether the button is pressed down (1) or released (0)
+        - int column - the matrix keypad column in which the button press was detected
+        - int row - the matrix keypad row which is currently being supplied power
+    - Outputs: 
+        - None
+    - Global variables accessed:
+        - row
+        - buttonPressed
+        - charPressed
+    - Global variables modified:
+        - buttonPressed is set to equal the input isRisingEdgeInterrupt
+        - charPressed is set to equal the value of the pressed key if the event is a rising edge interrupt
+    - Functions called:
+        - handleInputKey()
+            - Input parameters to this function are the key that was just input
+            - This function is only called if the input isRisingEdgeInterrupt is true
+
+
+- handleInputKey
+    This function handles the keypad input with respect to how that input 
+    handles the state of the system (as described in the design document) 
+    - Inputs:
+        - char inputKey
+    - Outputs: 
+        - None
+    - Global variables accessed:
+        - timerMode
+        - inputString
+    - Global variables modified:
+        - timerMode may be modified due to certain input keystrokes depending on the present mode
+        - inputString may be modified due to numeric inputs when in the input mode
+    - Functions called:
+        - TBD
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -81,19 +152,16 @@ TODO
 *
 *   Outputs:        Serial output, LCD display (TBD)
 *
-*   Constraints:    single-file polling of 4 input channels may trigger a button to be counted more than once
-*                   no more than one keypad button can be pressed at any point in time
-*
 *   References:     
-*               https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
+*               
 *
 *
 ******************************************************************************/
-#include "mbed.h"
-#include "1802.h"
-#include <cstdio>
-#include <ctime>
-#include <string>
+#include
+#include
+#include
+#include
+#include
 
 #define COL 16
 #define ROW 2
@@ -117,27 +185,10 @@ TODO
 #define AlarmMode     0x8
 
 
-//LCD_5x10DOTS
-
-//CSE321_LCD lcdObject(COL,ROW,);
 
 
 
-////declare individual interrupt handler events for each column
-//declare rising edge interrupt handler events
-void rising_isr_abc(void);
-void rising_isr_369(void);
-void rising_isr_258(void);
-void rising_isr_147(void);
 
-//declare falling edge interrupt handler events
-void falling_isr_abc(void);
-void falling_isr_369(void);
-void falling_isr_258(void);
-void falling_isr_147(void);
-
-//declare general handler for Matrix keypad input events
-void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row);
 
 //injection point for the controller to handle the input with respect to the system state
 void handleInputKey(char inputKey);
@@ -162,104 +213,3 @@ InterruptIn rowLL(PC_0);    //declare the connection to pin PC_0 as a source of 
 InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column
 InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column
 InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column
-
-int main() {
-    RCC->AHB2ENR |= 0x4;    //enable RCC for GPIO C
-
-    GPIOC->MODER |= 0x550000;       //configugure GPIO pins PC8,PC9,PC10,PC11
-    GPIOC->MODER &= ~(0xAA0000);    //as outputs
-
-    rowLL.rise(&rising_isr_abc);   //assign interrupt handler for a rising edge event from the column containing buttons a,b,c,d
-    rowCL.rise(&rising_isr_369);   //assign interrupt handler for a rising edge event from the column containing buttons 3,6,9,#
-    rowCR.rise(&rising_isr_258);   //assign interrupt handler for a rising edge event from the column containing buttons 2,5,8,0
-    rowRR.rise(&rising_isr_147);   //assign interrupt handler for a rising edge event from the column containing buttons 1,4,7,*
-
-    rowLL.fall(&falling_isr_abc);   //assign interrupt handler for a falling edge event from the column containing buttons a,b,c,d
-    rowCL.fall(&falling_isr_369);   //assign interrupt handler for a falling edge event from the column containing buttons 3,6,9,#
-    rowCR.fall(&falling_isr_258);   //assign interrupt handler for a falling edge event from the column containing buttons 2,5,8,0
-    rowRR.fall(&falling_isr_147);   //assign interrupt handler for a falling edge event from the column containing buttons 1,4,7,*
-
-    printf("\n\n== Initialized ==\n");
-
-    while (1) {
-
-        //supply voltage to one output row at a time
-        switch (row){
-            case 0:
-                GPIOC->ODR |= 0x100;        //supply voltage to the row of keypad buttons with labels *0#D
-                break;
-            case 1:
-                GPIOC->ODR |= 0x200;        //supply voltage to the row of keypad buttons with labels 789C
-                break;
-            case 2:
-                GPIOC->ODR |= 0x400;        //supply voltage to the row of keypad buttons with labels 456B
-                break;
-            case 3:
-                GPIOC->ODR |= 0x800;        //supply voltage to the row of keypad buttons with labels 123A
-                break;
-        }
-
-        thread_sleep_for(5);              //maintain power to the row for a brief period of time to account for bounce
-
-        //proceed to scanning the next input if and only if there is no closed loop in the current scan set
-        if(!buttonPressed){
-            GPIOC->ODR &= ~(0xF00);         //reset voltage to output 0 on all pins
-
-            thread_sleep_for(1);           //wait to give any falling edge triggers a chance to resolve before proceeding
-
-            row++;                          //update the row target to poll the next row
-            row%=4;
-        }
-    }
-
-    return 0;
-}
-
-
-void rising_isr_abc(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  ColABC, row);}
-void falling_isr_abc(void){handleMatrixButtonEvent(FallingEdgeInterrupt, ColABC, row);}
-void rising_isr_369(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col369, row);}
-void falling_isr_369(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col369, row);}
-void rising_isr_258(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col258, row);}
-void falling_isr_258(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col258, row);}
-void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col147, row);}
-void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147, row);}
-
-
-void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row){
-    buttonPressed = isRisingEdgeInterrupt;          //a rising edge interrupt occurs when a button is pressed.  
-                                                    //These are two separate variables because buttonPressed is global to control input polling.
-
-    if(isRisingEdgeInterrupt){
-        charPressed = keyValues[column][row];               //fetch the char value associated with the index that was retrieved
-        printf("key pressed: %c. log line: %d\n",charPressed, logLine++);
-        handleInputKey(charPressed);
-    }else{
-        charPressed = '\0';                                 //reset the char value to '\0' as the key has been released
-    }
-}
-
-
-//handle the key press as observed by the designed system
-void handleInputKey(char inputKey){
-
-    if(timerMode == InputMode){     //handle button behaviors when the system is in input mode
-
-        return;
-    }
-
-    if(timerMode == CountdownMode){
-
-        return;
-    }
-
-    if(timerMode == StoppedMode){
-
-        return;
-    }
-
-    if(timerMode == AlarmMode){
-
-        return;
-    }
-}

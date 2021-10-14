@@ -63,6 +63,9 @@
 //CSE321_LCD lcdObject(COL,ROW,);
 
 
+/****************************
+  *  Function Declarations  *
+  ***************************/
 
 ////declare individual interrupt handler events for each column
 //declare rising edge interrupt handler events
@@ -83,7 +86,11 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row);
 //injection point for the controller to handle the input with respect to the system state
 void handleInputKey(char inputKey);
 
-int timerMode = InputMode;  //begin execution with the timer in Input Mode
+/****************************
+  *    Global  Variables    *
+  ***************************/
+
+int timerMode;              //The timer mode defines what behavior will be undertaken due to a given keypad input
 
 int inputModeIndex = 0;         //the position of the input character
 char inputString[] = "m:ss";    //default input string, modified during the input mode
@@ -119,6 +126,9 @@ int main() {
     rowCL.fall(&falling_isr_369);   //assign interrupt handler for a falling edge event from the column containing buttons 3,6,9,#
     rowCR.fall(&falling_isr_258);   //assign interrupt handler for a falling edge event from the column containing buttons 2,5,8,0
     rowRR.fall(&falling_isr_147);   //assign interrupt handler for a falling edge event from the column containing buttons 1,4,7,*
+
+
+    timerMode = InputMode;          //begin execution with the timer in Input Mode
 
     printf("\n\n== Initialized ==\n");
 
