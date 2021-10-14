@@ -7,7 +7,6 @@ This project tracks the design and development of a countdown timer which can be
 - CSE321_project2_stage2_part1_mnelyubo.pdf provides a high-level overview of the design of the microcontroller behavior
 - 1802.cpp and 1802.h are the library files for interacting with the output LCD
 
-
 Contribitor List:
 - Misha Nelyubov (mnelyubo@buffalo.edu)
 - Dr. Jennifer Winikus (jwinikus@buffalo.edu)
@@ -22,13 +21,15 @@ The main behavior of this code controls a Nucelo L4R5ZI to
 
 # Required Materials
 - Nucleo L4R5ZI
-    - Hardware on which to execute code
+    - microcontroller on which to execute code and control inputs/outputs
 - 4x4 Matrix keypad
     - input for microcontroller
 - LCD (JHD1804 recommended)
     - output display for microcontroller
 - LEDs (4)
     - Two LEDs are sufficient to repersent all necessary outputs, but four are recommended.
+- Jumper Wires and breadboard
+    - used to connect microcontroller with inputs and outputs
 - USB 2.0 A to USB 2.0 Micro B cable
     - Interface between computer and Nucleo
 - Mbed Studio (https://os.mbed.com/studio/)
@@ -38,12 +39,33 @@ The main behavior of this code controls a Nucelo L4R5ZI to
 # Resources and References
 - https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
 
+
 # Getting Started
 TODO
+
 
 # CSE321_project2_mnelyubo_main.cpp:
 This program takes inputs from a 4x4 matrix keypad to control a timer.  The timer mode and input/remaining
 time are output to a connected LCD (WIP).
+
+The timer is configured to have the following four modes:
+- Input Mode
+    - Entered by pressing the D key and during system startup.
+    - The user can press numeric inputs on the number pad to configure the duration of the timer up to 9 minute and 59 seconds.
+    - The LCD will display the currently input time.
+    - For time durations less than 9 minutes and 59 seconds, inputs of more than 60 seconds will be accepted (e.g. 0:77 will be converted to 1:17).
+- Countdown Mode
+    - Started by pressing the A key.
+    - The LCD will display the remaining timer duration.
+- Stopped Mode
+    - Entered by pressing the B key during the Countdown or Alarm modes.
+    - Clears the value of an ongoing countdown and shuts down alarm notifications.
+    - The LCD will display "Timer stopped"
+- Alarm Mode
+    - The system will automatically switch to this mode from the Countdown mode when the countdown timer reaches 0 seconds remaining.
+    - The LCD will dysplay "Times up".
+    - Multiple LEDs will be turned on.
+    - Mode can be exited by pressing A, B, or D keys to switch to their corresponding mode, ending the alarm.
 
 The main function of the program initializes the system by configuring a set of four GPIO pins as
 outputs to supply voltage to the keypad, assigning event handlers to the rising and falling edges 
@@ -135,54 +157,6 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
         - TBD
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-*   Inputs:         4x4 matrix array input buttons
-*
-*   Outputs:        Serial output, LCD display (TBD)
-*
-*   References:     
-*               
-*
-*
-******************************************************************************/
-#include
-#include
-#include
-#include
-#include
-
-#define COL 16
-#define ROW 2
-
-#define RisingEdgeInterrupt 1
-#define FallingEdgeInterrupt 0
-
-//Associated column values with their respective character key value index in the matrix
-#define ColABC 0
-#define Col369 1
-#define Col258 2
-#define Col147 3
-
-//dimension (row and column) of the Matrix keypad
-#define MatrixDim 4
-
-//Timer modes
-#define InputMode     0x1
-#define CountdownMode 0x2
-#define StoppedMode   0x4
-#define AlarmMode     0x8
 
 
 
