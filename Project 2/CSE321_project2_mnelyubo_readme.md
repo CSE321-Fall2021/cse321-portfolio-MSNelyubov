@@ -1,4 +1,4 @@
-= About
+# About
 Project Description:
 
 This project tracks the design and development of a countdown timer which can be programmed by its user through a peripheral keypad and displays output text with an LCD display.  The project contains the following files:
@@ -13,14 +13,14 @@ Contribitor List:
 - Dr. Jennifer Winikus (jwinikus@buffalo.edu)
 
 
-= Features
+# Features
 The main behavior of this code controls a Nucelo L4R5ZI to
 - act as a countdown timer with set time, count down, alarm, and stop modes
 - take timer configuration inputs from a 4x4 matrix keypad
 - output the current state of the program to an external LCD monitor
 
 
-= Required Materials
+# Required Materials
 - Nucleo L4R5ZI
     - Hardware on which to execute code
 - 4x4 Matrix keypad
@@ -35,20 +35,20 @@ The main behavior of this code controls a Nucelo L4R5ZI to
     - IDE to develop and deploy code
 
 
-= Resources and References
+# Resources and References
 TODO
 
-= Getting Started
+# Getting Started
 TODO
 
-= CSE321_project2_mnelyubo_main.cpp:
+# CSE321_project2_mnelyubo_main.cpp:
 
 
-== Global Declarations
+## Global Declarations
 
-== API and Built-In Elements Used
+## API and Built-In Elements Used
 
-== Custom Functions
+## Custom Functions
 
 
 
