@@ -83,9 +83,9 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
     - This value controls the mode of the timer and is used to determine which behaviors to perform when a key is pressed.
 - int inputModeIndex
     - This value controls the position at which the next number of a duration will be stored in memory
-- char[] inputString
+- char[] inputString (TBD)
     - This value holds the current value of the user-input duration
-- int countdownStartValue
+- int countdownStartValue (TBD)
     - This value is the converted equivalent of the inputString into an integer quantity of seconds
 - int row
     - This value indicates the only row that is to be supplied power.  This is used to determine which keypad input was pressed in the function handleMatrixButtonEvent().
@@ -161,7 +161,7 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
             - This function is only called if the input isRisingEdgeInterrupt is true
 
 
-- handleInputKey
+- handleInputKey (WIP)
     This function handles the keypad input with respect to how that input 
     handles the state of the system (as described in the design document) 
     - Inputs:
