@@ -79,6 +79,27 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
 
 ## Global Declarations
 
+- int timerMode
+    - This value controls the mode of the timer and is used to determine which behaviors to perform when a key is pressed.
+- int inputModeIndex
+    - This value controls the position at which the next number of a duration will be stored in memory
+- char[] inputString
+    - This value holds the current value of the user-input duration
+- int countdownStartValue
+    - This value is the converted equivalent of the inputString into an integer quantity of seconds
+- int row
+    - This value indicates the only row that is to be supplied power.  This is used to determine which keypad input was pressed in the function handleMatrixButtonEvent().
+- int logLine
+    - This value is used with each serial print statement to distinguish identical outputs in the event of duplicate outputs.  It must be displayed and  incremented with each printf call.
+- int buttonPressed
+    - This variable indicates if any button is currently pressed.  A value of 1 means some button is pressed and 0 means no button is pressed.
+    - This is not guaranteed to be correct if multiple buttons are pressed at the same time.
+- char charPressed
+    - This variable contains the ASCII character representation of the button that is currently being pressed.  If no button is being pressed, it will contain an ASCII value of '\0', the null terminator of a string.  
+    - This is not guaranteed to be correct if multiple buttons are pressed at the same time.
+- char[][] keyValues
+    - This two-dimensional array contains the ASCII character values associated with each key in the matrix.  It can be accessed with the index of a triggered input column and currently powered row to determine the ASCII value associated with that button.
+
 ## API and Built-In Elements Used
 - mbed.h
     - InterruptIn objects (4) used to detect button presses on the matrix keypad
@@ -158,32 +179,3 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
 
 
 
-
-
-
-
-
-
-//injection point for the controller to handle the input with respect to the system state
-void handleInputKey(char inputKey);
-
-int timerMode = InputMode;  //begin execution with the timer in Input Mode
-
-int inputModeIndex = 0;         //the position of the input character
-char inputString[] = "m:ss";    //default input string, modified during the input mode
-int countdownStartValue = -1;   //countdown start value: how long the timer should run for, in seconds, just afer starting up.  Default to -1 as "no input received" state
-
-int row = 0;                //the row currently being supplied a non-zero voltage
-int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
-
-int buttonPressed = 0;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
-char charPressed = '\0';    //the character on the input matrix keypad which is currently pressed down.  Defaults to '\0' when no key is pressed.
-                            //undefined behavior when more than one key is pressed at the same time
-
-// MatrixDim + 1 used as second dimension because of null terminator in each string
-char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
-
-InterruptIn rowLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column
-InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column
-InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column
-InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column
