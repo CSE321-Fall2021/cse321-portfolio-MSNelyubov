@@ -55,10 +55,9 @@ Getting Started
 -------------------
 CSE321_project1_mnelyubo_corrected_code.cpp:
 -------------------
- 
-This file has lots of things. There is a os typle tool used to create periodic events with a periepherial. The name of the file and the contents in here will be entirely updated.
- 
-This is totally not bare metal since there are some cool tools used. Those tools instantiate with a finite reference but gots their unique object created. 
+This file contains the code to enable/disable the periodic oscillation of an onboard LED.
+
+This code is implemented with objects from the MBED OS API to control the onboard inputs and outputs of the system.
 
 
 ----------
