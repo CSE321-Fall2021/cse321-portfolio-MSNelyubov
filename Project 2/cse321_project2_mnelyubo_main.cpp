@@ -28,7 +28,7 @@
 *   Outputs:        Serial output, LCD display (TBD), 2 LED channels (TBD)
 *
 *   Constraints:    in order to avoid undefined behavior, no more than one
-*                     keypad button can be pressed at any point in time
+*                     keypad button should be pressed at any point in time
 *
 *   References:     
 *               https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
