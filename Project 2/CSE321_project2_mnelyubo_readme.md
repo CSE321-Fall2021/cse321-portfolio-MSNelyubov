@@ -20,18 +20,25 @@ The main behavior of this code controls a Nucelo L4R5ZI to
 
 
 # Required Materials
+
 - Nucleo L4R5ZI
     - microcontroller on which to execute code and control inputs/outputs
+
 - 4x4 Matrix keypad
     - input for microcontroller
+
 - LCD (JHD1804 recommended)
     - output display for microcontroller
+
 - LEDs (4)
     - Two LEDs are sufficient to repersent all necessary outputs, but four are recommended.
+
 - Jumper Wires and breadboard
     - used to connect microcontroller with inputs and outputs
+
 - USB 2.0 A to USB 2.0 Micro B cable
     - Interface between computer and Nucleo
+
 - Mbed Studio (https://os.mbed.com/studio/)
     - IDE to develop and deploy code
 
@@ -60,13 +67,16 @@ The timer is configured to have the following four modes:
     - The user can press numeric inputs on the number pad to configure the duration of the timer up to 9 minute and 59 seconds.
     - The LCD will display the currently input time.
     - For time durations less than 9 minutes and 59 seconds, inputs of more than 60 seconds will be accepted (e.g. 0:77 will function the same as 1:17).
+
 - Countdown Mode
     - Started by pressing the A key.
     - The LCD will display the remaining timer duration.
+
 - Stopped Mode
     - Entered by pressing the B key during the Countdown or Alarm modes.
     - Clears the value of an ongoing countdown and shuts down alarm notifications.
     - The LCD will display "Timer stopped"
+
 - Alarm Mode
     - The system will automatically switch to this mode from the Countdown mode when the countdown timer reaches 0 seconds remaining.
     - The LCD will dysplay "Times up".
@@ -87,24 +97,33 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
 
 - int timerMode
     - This value controls the mode of the timer and is used to determine which behaviors to perform when a key is pressed.
+
 - int inputModeIndex
     - This value controls the position at which the next number of a duration will be stored in memory
+
 - char[] inputString (TBD)
     - This value holds the current value of the user-input duration
+
 - int countdownStartValue (TBD)
     - This value is the converted equivalent of the inputString into an integer quantity of seconds
+
 - int row
     - This value indicates the only row that is to be supplied power.  This is used to determine which keypad input was pressed in the function handleMatrixButtonEvent().
+
 - int logLine
     - This value is used with each serial print statement to distinguish identical outputs in the event of duplicate outputs.  It must be displayed and  incremented with each printf call.
+
 - int buttonPressed
     - This variable indicates if any button is currently pressed.  A value of 1 means some button is pressed and 0 means no button is pressed.
     - This is not guaranteed to be correct if multiple buttons are pressed at the same time.
+
 - char charPressed
     - This variable contains the ASCII character representation of the button that is currently being pressed.  If no button is being pressed, it will contain an ASCII value of '\0', the null terminator of a string.  
     - This is not guaranteed to be correct if multiple buttons are pressed at the same time.
+
 - char[][] keyValues
     - This two-dimensional array contains the ASCII character values associated with each key in the matrix.  It can be accessed with the index of a triggered input column and currently powered row to determine the ASCII value associated with that button.
+
 
 ## API and Built-In Elements Used
 - mbed.h
@@ -118,6 +137,7 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
 
 
 ## Custom Functions
+
 
 - Interrupt Handlers:
     - The following set of functions are used as handlers for the rising and falling edge behaviors of keypad buttons.
@@ -182,6 +202,3 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
         - inputString may be modified due to numeric inputs when in the input mode
     - Functions called:
         - TBD
-
-
-
