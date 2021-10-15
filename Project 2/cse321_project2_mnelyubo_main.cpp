@@ -58,9 +58,8 @@
 #define AlarmMode     0x8
 
 
-//LCD_5x10DOTS
-
-//CSE321_LCD lcdObject(COL,ROW,);
+//create interface to output LCD
+//CSE321_LCD lcdObject(COL,ROW);
 
 
 /****************************
