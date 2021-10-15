@@ -110,6 +110,11 @@ InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of 
 InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column
 InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column
 
+/****************************
+  *   Global API Objects    *
+  ***************************/
+
+
 int main() {
     RCC->AHB2ENR |= 0x4;    //enable RCC for GPIO C
 
