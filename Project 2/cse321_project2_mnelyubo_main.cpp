@@ -166,6 +166,8 @@ int main() {
 }
 
 
+//The following set of functions are used as handlers for the rising and falling edge behaviors of keypad buttons.
+//All of the following eight functions serve to configure the inputs for handleMatrixButtonevent().
 void rising_isr_abc(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  ColABC, row);}
 void falling_isr_abc(void){handleMatrixButtonEvent(FallingEdgeInterrupt, ColABC, row);}
 void rising_isr_369(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col369, row);}
@@ -176,6 +178,11 @@ void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col147,
 void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147, row);}
 
 
+/**
+*  This function converts an input event type, row, and column received 
+*    from an ISR handler into the character that is represented by that 
+*    button press and stores that character to the global variable charPressed.   
+*/
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row){
     buttonPressed = isRisingEdgeInterrupt;          //a rising edge interrupt occurs when a button is pressed.  
                                                     //These are two separate variables because buttonPressed is global to control input polling.
@@ -190,7 +197,10 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row){
 }
 
 
-//handle the key press as observed by the designed system
+/**  
+*  This function handles the keypad input with respect to how that input 
+*    handles the state of the system (as described in the design document) 
+*/
 void handleInputKey(char inputKey){
 
     if(timerMode == InputMode){     //handle button behaviors when the system is in input mode
