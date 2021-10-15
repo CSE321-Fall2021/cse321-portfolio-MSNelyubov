@@ -6,15 +6,17 @@
 *   Purpose:        Stage 1: extract clean input from keypad.
 *
 *   Functions:      
+*               handleMatrixButtonEvent
+*               handleInputKey
 *               The following set of functions are used as handlers for the rising and falling edge behaviors of keypad buttons
-*               rising_isr_abc
-*               rising_isr_369
-*               rising_isr_258
-*               rising_isr_147
-*               falling_isr_abc
-*               falling_isr_369
-*               falling_isr_258
-*               falling_isr_147
+*                 rising_isr_abc
+*                 rising_isr_369
+*                 rising_isr_258
+*                 rising_isr_147
+*                 falling_isr_abc
+*                 falling_isr_369
+*                 falling_isr_258
+*                 falling_isr_147
 *               
 *   Assignment:     CSE321 Project 2
 *
