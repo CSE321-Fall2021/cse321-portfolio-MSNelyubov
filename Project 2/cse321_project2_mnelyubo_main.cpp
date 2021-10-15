@@ -22,7 +22,7 @@
 *
 *   Inputs:         4x4 matrix array input buttons
 *
-*   Outputs:        Serial output, LCD display (TBD)
+*   Outputs:        Serial output, LCD display (TBD), 2 LED channels (TBD)
 *
 *   Constraints:    single-file polling of 4 input channels may trigger a button to be counted more than once
 *                   no more than one keypad button can be pressed at any point in time
