@@ -41,7 +41,13 @@ The main behavior of this code controls a Nucelo L4R5ZI to
 
 
 # Getting Started
-TODO
+1. Clone the git repository locally
+2. Open the repository with Mbed Studio
+3. Select "Project 2" as the Active program in Mbed studio
+4. Connect the Nucleo-L4R5ZI to your computer via USB cable
+5. Select Nucleo-L4R5ZI as the Target in Mbed studio
+6. (TODO: create schematic of all connections) Connect the Nucelo to the input and output peripherals through the breadboard
+7. Click on the play button labeled "Run Program" to begin executing the code on the Nucleo
 
 
 # CSE321_project2_mnelyubo_main.cpp:
@@ -53,7 +59,7 @@ The timer is configured to have the following four modes:
     - Entered by pressing the D key and during system startup.
     - The user can press numeric inputs on the number pad to configure the duration of the timer up to 9 minute and 59 seconds.
     - The LCD will display the currently input time.
-    - For time durations less than 9 minutes and 59 seconds, inputs of more than 60 seconds will be accepted (e.g. 0:77 will be converted to 1:17).
+    - For time durations less than 9 minutes and 59 seconds, inputs of more than 60 seconds will be accepted (e.g. 0:77 will function the same as 1:17).
 - Countdown Mode
     - Started by pressing the A key.
     - The LCD will display the remaining timer duration.
