@@ -2,8 +2,10 @@
 *   File Name:      cse321_project2_mnelyubo_main.cpp
 *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
 *   Date Created:   10/10/2021
-*   Last Modified:  10/10/2021
-*   Purpose:        Stage 1: extract clean input from keypad.
+*   Last Modified:  10/15/2021
+*   Purpose:        Extract input from a 4x4 keypad to act as the source of user 
+*                     input to control a timer that will display its current
+*                     mode behavior through an LCD. 
 *
 *   Functions:      
 *               handleMatrixButtonEvent
