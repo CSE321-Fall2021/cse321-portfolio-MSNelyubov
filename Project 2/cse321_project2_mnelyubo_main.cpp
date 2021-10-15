@@ -58,7 +58,7 @@
 #define AlarmMode     0x8
 
 
-//create interface to output LCD
+//TODO: create interface to output LCD
 //CSE321_LCD lcdObject(COL,ROW);
 
 
@@ -85,6 +85,7 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row);
 //injection point for the controller to handle the input with respect to the system state
 void handleInputKey(char inputKey);
 
+
 /****************************
   *    Global  Variables    *
   ***************************/
@@ -105,14 +106,15 @@ char charPressed = '\0';    //the character on the input matrix keypad which is 
 // MatrixDim + 1 used as second dimension because of null terminator in each string
 char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
 
-InterruptIn rowLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column
-InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column
-InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column
-InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column
 
 /****************************
   *   Global API Objects    *
   ***************************/
+
+InterruptIn rowLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column of the matrix keypad
+InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column of the matrix keypad
+InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
+InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
 
 
 int main() {
