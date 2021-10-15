@@ -211,7 +211,7 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row){
 
 /**  
 *  This function handles the keypad input with respect to how that input 
-*    handles the state of the system (as described in the design document) 
+*    affects the state of the system (as described in the design document) 
 */
 void handleInputKey(char inputKey){
 
