@@ -118,6 +118,8 @@ int focusInputPositions[] = {
 };
 int focusInputPositionsIdx = 0;  //the position of the input value index that is currently being modified (if in Input Mode)
 
+int outputChangesMade = true;      //flag to indicate if the output to the LCD needs to be refreshed.  Start at 1 to populate the initial display
+
 int buttonPressed = false;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
 char charPressed = '\0';    //the character on the input matrix keypad which is currently pressed down.  Defaults to '\0' when no key is pressed.
                             //undefined behavior when more than one key is pressed at the same time
@@ -267,7 +269,7 @@ void handleInputKey(char inputKey){
 */
 void populateLcdOutput(){
     if(!outputChangesMade) return;      //minimize display signals by only refreshing when output changes have been made
-    outputChangesMade = 0;
+    outputChangesMade = false;
     //refresh the LCD display
     lcdObject.clear();
     for(char line = 0; line < ROW; line++){
