@@ -135,6 +135,8 @@ char modeLCDvalues[8][COL] = {
   *   Global API Objects    *
   ***************************/
 
+CSE321_LCD lcdObject(COL,ROW);  //create interface to control the output LCD
+
 InterruptIn rowLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column of the matrix keypad
 InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column of the matrix keypad
 InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
