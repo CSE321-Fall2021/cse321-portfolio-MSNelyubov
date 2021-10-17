@@ -13,7 +13,7 @@ Contribitor List:
 
 
 # Features
-The main behavior of this code controls a Nucelo L4R5ZI to
+The main behavior of this code controls a Nucleo L4R5ZI to
 - act as a countdown timer with set time, count down, alarm, and stop modes
 - take timer configuration inputs from a 4x4 matrix keypad
 - output the current state of the program to an external LCD monitor
@@ -53,7 +53,31 @@ The main behavior of this code controls a Nucelo L4R5ZI to
 3. Select "Project 2" as the Active program in Mbed studio
 4. Connect the Nucleo-L4R5ZI to your computer via USB cable
 5. Select Nucleo-L4R5ZI as the Target in Mbed studio
-6. (TODO: create schematic of all connections) Connect the Nucelo to the input and output peripherals through the breadboard
+6. (TODO: create schematic of all connections) Connect the Nucleo to the input and output peripherals through the breadboard
+    - connect power supply lanes
+        - connect a Nucleo pin labeled GND to the - bus of the breadboard
+        - connect a Nucleo pin labeled 5V  to the + bus of the breadboard
+    - connect input source pins
+        - connect the Nucleo pin labeled A1 to pin 1 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled A2 to pin 2 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled A3 to pin 3 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled A4 to pin 4 of the keypad via jumper wire.
+
+        - connect a 1k resistor in between the connection from pin A1 to keypad 1 and the ground bus.
+            - this serves to provide a reference to the common ground for the signal
+            - add one 1k resistor for each of the four pins
+
+        - connect the Nucleo pin labeled PC8  in the pin diagram in sector CN8 to pin 5 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled PC9  in the pin diagram in sector CN8 to pin 6 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled PC10 in the pin diagram in sector CN8 to pin 7 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled PC11 in the pin diagram in sector CN8 to pin 8 of the keypad via jumper wire.
+
+    - connect output display pins
+        - connect the - lane of the breadboard to the LCD pin labeled GND using the LCD cable and a jumper wire.
+        - connect the + lane of the breadboard to the LCD pin labeled VCC using the LCD cable and a jumper wire.
+        - connect the Nucleo pin labeled SDA / D14 to the LCD pin labeled SDA using the LCD cable and a jumper wire.
+        - connect the Nucleo pin labeled SCL / D15 to the LCD pin labeled SCL using the LCD cable and a jumper wire.
+
 7. Click on the play button labeled "Run Program" to begin executing the code on the Nucleo
 
 
