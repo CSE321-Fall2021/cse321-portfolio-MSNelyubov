@@ -67,6 +67,11 @@
 #define DurationInput10SecondsIndex 13
 #define DurationInputSecondsIndex 14
 
+//Countdown Duration string index values corresponding to indexes in the string array modeLCDvalues
+#define CountdownMinutesIndex 6
+#define Countdown10SecondsIndex 8
+#define CountdownSecondsIndex 9
+
 //System Refresh Rates
 #define KeyPadHighInputCycleTime 5
 #define KeyPadFallingEdgeBufferTime 1
@@ -147,6 +152,7 @@ InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of 
 InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
 InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
 
+Ticker lcdRefresher;
 
 int main() {
     RCC->AHB2ENR |= 0x4;    //enable RCC for GPIO C
