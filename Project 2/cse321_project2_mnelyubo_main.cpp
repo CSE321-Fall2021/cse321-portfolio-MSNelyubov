@@ -259,17 +259,17 @@ void handleInputKey(char inputKey){
     outputChangesMade = true;       //assume true for any input even if no changes were actually made.  Requests LCD to be refreshed.
 
     if(timerMode == InputMode){     //handle button behaviors when the system is in input mode
-            switch (inputKey) {
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
+        switch (inputKey) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
                     //In Input Mode, any numeric inputs configure the timer duration.
                     //mode LCD values access:
                     //  access Input Mode's second string line, which contains the timer duration
