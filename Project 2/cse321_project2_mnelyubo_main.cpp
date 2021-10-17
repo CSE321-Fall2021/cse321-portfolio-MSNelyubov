@@ -92,7 +92,7 @@ void falling_isr_147(void);
 void populateLcdOutput();
 
 //declare general handler for Matrix keypad input events
-void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row);
+void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);
 
 //injection point for the controller to handle the input with respect to the system state
 void handleInputKey(char inputKey);
@@ -219,7 +219,7 @@ void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147,
 *    from an ISR handler into the character that is represented by that 
 *    button press and stores that character to the global variable charPressed.   
 */
-void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row){
+void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
     buttonPressed = isRisingEdgeInterrupt;          //a rising edge interrupt occurs when a button is pressed.  
                                                     //These are two separate variables because buttonPressed is global to control input polling.
 
