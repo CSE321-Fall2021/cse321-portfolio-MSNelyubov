@@ -147,7 +147,7 @@ int main() {
     RCC->AHB2ENR |= 0x4;    //enable RCC for GPIO C
 
     GPIOC->MODER |= 0x550000;       //configugure GPIO pins PC8,PC9,PC10,PC11
-    GPIOC->MODER &= ~(0xAA0000);    //as outputs
+    GPIOC->MODER &= ~(0xAA0000);    //  as outputs
 
     rowLL.rise(&rising_isr_abc);   //assign interrupt handler for a rising edge event from the column containing buttons a,b,c,d
     rowCL.rise(&rising_isr_369);   //assign interrupt handler for a rising edge event from the column containing buttons 3,6,9,#
