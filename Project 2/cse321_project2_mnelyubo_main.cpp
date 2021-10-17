@@ -57,10 +57,10 @@
 #define MatrixDim 4
 
 //Timer modes
-#define InputMode     0x1
-#define CountdownMode 0x2
-#define StoppedMode   0x4
-#define AlarmMode     0x8
+#define InputMode     0x0
+#define CountdownMode 0x1
+#define StoppedMode   0x2
+#define AlarmMode     0x3
 
 
 //TODO: create interface to output LCD
