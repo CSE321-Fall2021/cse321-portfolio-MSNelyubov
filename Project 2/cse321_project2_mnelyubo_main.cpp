@@ -62,6 +62,10 @@
 #define StoppedMode   0x2
 #define AlarmMode     0x3
 
+//Input Duration string index values correspoinding to indexes in the string array modeLCDvalues
+#define DurationInputMinutesIndex 11
+#define DurationInput10SecondsIndex 13
+#define DurationInputSecondsIndex 14
 
 //TODO: create interface to output LCD
 //CSE321_LCD lcdObject(COL,ROW);
@@ -103,6 +107,14 @@ int countdownStartValue = -1;   //countdown start value: how long the timer shou
 
 int row = 0;                //the row currently being supplied a non-zero voltage
 int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
+
+
+int focusInputPositions[] = {
+    DurationInputSecondsIndex, 
+    DurationInput10SecondsIndex, 
+    DurationInputMinutesIndex
+};
+int focusInputPositionsIdx = 0;  //the position of the input value index that is currently being modified (if in Input Mode)
 
 int buttonPressed = 0;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
 char charPressed = '\0';    //the character on the input matrix keypad which is currently pressed down.  Defaults to '\0' when no key is pressed.
