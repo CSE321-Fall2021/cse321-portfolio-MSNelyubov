@@ -298,8 +298,12 @@ void handleInputKey(char inputKey){
     }
 
     if(timerMode == CountdownMode){
-
-        return;
+        switch (inputKey) {
+            case 'b':           //button press B is defined to be the trigger that switches the tier to Stopped Mode
+                timerMode = StoppedMode;
+                break;
+        }
+        return;     //return to avoid jumping into any other mode handler
     }
 
     if(timerMode == StoppedMode){
