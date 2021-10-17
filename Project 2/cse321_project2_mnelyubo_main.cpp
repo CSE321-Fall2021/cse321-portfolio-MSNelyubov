@@ -256,3 +256,21 @@ void handleInputKey(char inputKey){
         return;
     }
 }
+
+/**  
+*  This function handles the LCD output data flow based on the modeLCDvalues string array.
+*  This function can't be called from an InterruptIn or basic Ticker context.
+*/
+void populateLcdOutput(){
+    if(!outputChangesMade) return;      //minimize display signals by only refreshing when output changes have been made
+    outputChangesMade = 0;
+    //refresh the LCD display
+    lcdObject.clear();
+    for(char line = 0; line < ROW; line++){
+        char* printVal = modeLCDvalues[timerMode + line];
+
+        printf("ll:%d Attempting to append [%s] to line %d\n", logLine++, printVal, line);
+        lcdObject.setCursor(0, line);                       //reset cursor position to line 0
+        lcdObject.print(printVal);                          //sent print request to configure line 0
+    }
+}
