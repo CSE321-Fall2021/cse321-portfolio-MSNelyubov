@@ -58,9 +58,9 @@
 
 //Timer modes
 #define InputMode     0x0
-#define CountdownMode 0x1
-#define StoppedMode   0x2
-#define AlarmMode     0x3
+#define CountdownMode 0x2
+#define StoppedMode   0x4
+#define AlarmMode     0x6
 
 //Input Duration string index values correspoinding to indexes in the string array modeLCDvalues
 #define DurationInputMinutesIndex 11
@@ -244,6 +244,8 @@ void handleInputKey(char inputKey){
 
     if(timerMode == InputMode){     //handle button behaviors when the system is in input mode
 
+                
+                case 'a':
         return;
     }
 
