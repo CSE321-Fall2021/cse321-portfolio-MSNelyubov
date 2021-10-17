@@ -123,6 +123,13 @@ char charPressed = '\0';    //the character on the input matrix keypad which is 
 // MatrixDim + 1 used as second dimension because of null terminator in each string
 char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
 
+//LCD output matrix. Access strings as modeLCDvalues[definedMode + LcdLineIndex]
+char modeLCDvalues[8][COL] = {
+    " Input Duration"," of timer: 1:11",      //Input Mode     LCD Output String
+    " Time Remaining","      0:00     ",      //Countdown Mode LCD Output String
+    " TIMER  STOPPED","               ",      //Stopped Mode   LCD Output String
+    "               ","    Times up   "       //Alarm Mode     LCD Output String
+};
 
 /****************************
   *   Global API Objects    *
