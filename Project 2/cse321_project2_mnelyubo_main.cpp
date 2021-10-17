@@ -307,8 +307,16 @@ void handleInputKey(char inputKey){
     }
 
     if(timerMode == StoppedMode){
-
-        return;
+        switch (inputKey) {
+            case 'a':           //button press A is defined to be the trigger that switches the timer to Countdown Mode
+                switchToCountdownMode();
+                break;
+            case 'd':           //button press D is defined to be the trigger that switches the timer to Input Mode
+                timerMode = InputMode;
+                focusInputPositionsIdx = 0;     //reset focus input position index to 0 to minimize input confusion
+                break;
+        }
+        return;     //return to avoid jumping into any other mode handler
     }
 
     if(timerMode == AlarmMode){
