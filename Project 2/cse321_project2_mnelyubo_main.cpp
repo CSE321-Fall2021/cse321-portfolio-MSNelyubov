@@ -67,8 +67,9 @@
 #define DurationInput10SecondsIndex 13
 #define DurationInputSecondsIndex 14
 
-//TODO: create interface to output LCD
-//CSE321_LCD lcdObject(COL,ROW);
+//System Refresh Rates
+#define KeyPadHighInputCycleTime 5
+#define KeyPadFallingEdgeBufferTime 1
 
 
 /****************************
@@ -189,12 +190,13 @@ int main() {
         }
 
         thread_sleep_for(5);              //maintain power to the row for a brief period of time to account for bounce
+        thread_sleep_for(KeyPadHighInputCycleTime);   //maintain power to the row for a brief period of time to account for bounce
 
         //proceed to scanning the next input if and only if there is no closed loop in the current scan set
         if(!buttonPressed){
             GPIOC->ODR &= ~(0xF00);         //reset voltage to output 0 on all pins
 
-            thread_sleep_for(1);           //wait to give any falling edge triggers a chance to resolve before proceeding
+            thread_sleep_for(KeyPadFallingEdgeBufferTime);   //wait to give any falling edge triggers a chance to resolve before proceeding
 
             row++;                          //update the row target to poll the next row
             row%=4;
