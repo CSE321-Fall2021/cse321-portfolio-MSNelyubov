@@ -191,7 +191,8 @@ int main() {
 
         thread_sleep_for(KeyPadHighInputCycleTime);   //maintain power to the row for a brief period of time to account for bounce
 
-        //proceed to scanning the next input if and only if there is no closed loop in the current scan set
+        //proceed to scanning the next input if and only if there is 
+        //  no closed loop in the current scan set
         if(!buttonPressed){
             GPIOC->ODR &= ~(0xF00);         //reset voltage to output 0 on all pins
 
