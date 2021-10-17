@@ -358,7 +358,7 @@ void populateLcdOutput(){
     if(!outputChangesMade) return;      //minimize display signals by only refreshing when output changes have been made
     outputChangesMade = false;
     //refresh the LCD display
-    lcdObject.clear();
+    //lcdObject.clear();
     for(char line = 0; line < ROW; line++){
         char* printVal = modeLCDvalues[timerMode + line];
 
