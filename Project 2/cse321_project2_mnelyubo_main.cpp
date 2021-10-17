@@ -232,7 +232,7 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 
     if(isRisingEdgeInterrupt){
         charPressed = keyValues[column][row];               //fetch the char value associated with the index that was retrieved
-        printf("key pressed: %c. log line: %d\n",charPressed, logLine++);
+        printf("ll:%d key pressed: %c.\n",logLine++, charPressed);
         handleInputKey(charPressed);
     }else{
         charPressed = '\0';                                 //reset the char value to '\0' as the key has been released
