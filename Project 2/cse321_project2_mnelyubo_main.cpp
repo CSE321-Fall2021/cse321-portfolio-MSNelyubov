@@ -103,6 +103,9 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);
 //injection point for the controller to handle the input with respect to the system state
 void handleInputKey(char inputKey);
 
+//use a 1 Hz ticker to count down the remaining seconds
+void tickCountdownTimer();
+
 
 /****************************
   *    Global  Variables    *
@@ -152,7 +155,7 @@ InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of 
 InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
 InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
 
-Ticker lcdRefresher;
+Ticker countdownTicker;
 
 int main() {
     RCC->AHB2ENR |= 0x4;    //enable RCC for GPIO C
@@ -173,7 +176,7 @@ int main() {
     lcdObject.begin();              //initialize LCD
     populateLcdOutput();            //populate initial LCD text
 
-    //lcdRefresher.attach_us(&populateLcdOutput, 1000 * RefreshLCDcycleTime);       //todo: implement ticker with 
+    countdownTicker.attach(&tickCountdownTimer, 1s);        //Attach the function that operates the Countdown mode to the ticket that triggers it once per second
 
     timerMode = InputMode;          //begin execution with the timer in Input Mode
 
@@ -288,9 +291,9 @@ void handleInputKey(char inputKey){
                 case 'a':           //button press A is defined to be the trigger that switches the timer to countdown mode
                     timerMode = CountdownMode;      //set the timer to countdown mode
                     //push the input number to Countdown Mode strings
-                    modeLCDvalues [CountdownMode + 1][CountdownMinutesIndex]   = modeLCDvalues[InputMode + 1][DurationInputMinutesIndex];   //inherit minutes from latest input
-                    modeLCDvalues [CountdownMode + 1][Countdown10SecondsIndex] = modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex]; //inherit 10's of seconds from latest input
-                    modeLCDvalues [CountdownMode + 1][CountdownSecondsIndex]   = modeLCDvalues[InputMode + 1][DurationInputSecondsIndex];   //inherit seconds from latest input
+                    modeLCDvalues[CountdownMode + 1][CountdownMinutesIndex]   = modeLCDvalues[InputMode + 1][DurationInputMinutesIndex];   //inherit minutes from latest input
+                    modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex] = modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex]; //inherit 10's of seconds from latest input
+                    modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex]   = modeLCDvalues[InputMode + 1][DurationInputSecondsIndex];   //inherit seconds from latest input
                     break;
             }
         return;
@@ -329,3 +332,39 @@ void populateLcdOutput(){
         lcdObject.print(printVal);                          //sent print request to configure line 0
     }
 }
+
+/**  
+*  This function counts down the output string of the timer by 1 when the system
+*    is in Countdown Mode
+*/
+void tickCountdownTimer(){
+    if(timerMode != CountdownMode) return;
+    outputChangesMade = true;
+
+    //if the seconds digit is greater than 0, decrement it and exit the function
+    if(modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex] > '0'){
+        modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex]--;
+        return;
+    }
+
+    //if the tens of seconds digit is greater than 0, decrement it, set seconds to 9, and exit the function
+    if(modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex] > '0'){
+        modeLCDvalues [CountdownMode + 1][Countdown10SecondsIndex]--;
+        modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex] = '9';
+        return;
+    }
+
+    //if the minutes digit is greater than 0, decrement it,  set the seconds count to 59, and exit the function
+    if(modeLCDvalues[CountdownMode + 1][CountdownMinutesIndex] > '0'){
+        modeLCDvalues[CountdownMode + 1][CountdownMinutesIndex]--;
+        modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex] = '5';
+        modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex]   = '9';
+        return;
+    }
+
+    //if none of the above conditions caused the function to exit, the time must be 0:00
+    //switch the timer to the Alarm Mode
+    timerMode = AlarmMode;
+}
+
+
