@@ -245,6 +245,7 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 *    affects the state of the system (as described in the design document) 
 */
 void handleInputKey(char inputKey){
+    outputChangesMade = true;       //assume true for any input even if no changes were actually made.  Requests LCD to be refreshed.
 
     if(timerMode == InputMode){     //handle button behaviors when the system is in input mode
 
