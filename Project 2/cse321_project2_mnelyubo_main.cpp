@@ -200,6 +200,8 @@ int main() {
             row++;                          //update the row target to poll the next row
             row%=4;
         }
+
+        populateLcdOutput();                //refresh the LCD output at the same rate as inputs are polled
     }
 
     return 0;
