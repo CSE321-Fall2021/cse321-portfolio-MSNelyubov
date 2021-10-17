@@ -95,7 +95,7 @@ void falling_isr_258(void);
 void falling_isr_147(void);
 
 //output to lCD
-void populateLcdOutput();
+void populateLcdOutput();   //TODO: handle LED outputs relevant for the mode as well
 
 //declare general handler for Matrix keypad input events
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);
