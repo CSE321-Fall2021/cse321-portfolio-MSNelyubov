@@ -106,6 +106,8 @@ void handleInputKey(char inputKey);
 //use a 1 Hz ticker to count down the remaining seconds
 void tickCountdownTimer();
 
+//switch the system to Countdown Mode
+void switchToCountdownMode();
 
 /****************************
   *    Global  Variables    *
@@ -288,15 +290,11 @@ void handleInputKey(char inputKey){
                     }
                     break;
                 
-                case 'a':           //button press A is defined to be the trigger that switches the timer to countdown mode
-                    timerMode = CountdownMode;      //set the timer to countdown mode
-                    //push the input number to Countdown Mode strings
-                    modeLCDvalues[CountdownMode + 1][CountdownMinutesIndex]   = modeLCDvalues[InputMode + 1][DurationInputMinutesIndex];   //inherit minutes from latest input
-                    modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex] = modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex]; //inherit 10's of seconds from latest input
-                    modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex]   = modeLCDvalues[InputMode + 1][DurationInputSecondsIndex];   //inherit seconds from latest input
-                    break;
-            }
-        return;
+            case 'a':           //button press A is defined to be the trigger that switches the timer to Countdown Mode
+                switchToCountdownMode();
+                break;
+        }
+        return;     //return to avoid jumping into any other mode handler
     }
 
     if(timerMode == CountdownMode){
@@ -314,6 +312,20 @@ void handleInputKey(char inputKey){
         return;
     }
 }
+
+/**  
+*  This function sets the Countdown timer to its initial value.
+*  This function should be run when the A key is pressed.
+*/
+void switchToCountdownMode() {
+    timerMode = CountdownMode;      //set the timer to countdown mode
+
+    //push the input mode duration to the Countdown Mode string
+    modeLCDvalues[CountdownMode + 1][CountdownMinutesIndex]   = modeLCDvalues[InputMode + 1][DurationInputMinutesIndex];   //inherit minutes from latest input
+    modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex] = modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex]; //inherit 10's of seconds from latest input
+    modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex]   = modeLCDvalues[InputMode + 1][DurationInputSecondsIndex];   //inherit seconds from latest input
+}
+
 
 /**  
 *  This function handles the LCD output data flow based on the modeLCDvalues string array.
