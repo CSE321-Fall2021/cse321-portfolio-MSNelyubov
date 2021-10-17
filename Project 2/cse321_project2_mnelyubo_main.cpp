@@ -88,6 +88,9 @@ void falling_isr_369(void);
 void falling_isr_258(void);
 void falling_isr_147(void);
 
+//output to lCD
+void populateLcdOutput();
+
 //declare general handler for Matrix keypad input events
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt,int column, int row);
 
