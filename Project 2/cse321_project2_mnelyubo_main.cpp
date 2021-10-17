@@ -189,7 +189,6 @@ int main() {
                 break;
         }
 
-        thread_sleep_for(5);              //maintain power to the row for a brief period of time to account for bounce
         thread_sleep_for(KeyPadHighInputCycleTime);   //maintain power to the row for a brief period of time to account for bounce
 
         //proceed to scanning the next input if and only if there is no closed loop in the current scan set
