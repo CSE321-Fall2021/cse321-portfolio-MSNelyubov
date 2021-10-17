@@ -167,6 +167,8 @@ int main() {
     lcdObject.begin();              //initialize LCD
     populateLcdOutput();            //populate initial LCD text
 
+    //lcdRefresher.attach_us(&populateLcdOutput, 1000 * RefreshLCDcycleTime);       //todo: implement ticker with 
+
     timerMode = InputMode;          //begin execution with the timer in Input Mode
 
     printf("\n\n== Initialized ==\n");
@@ -248,9 +250,43 @@ void handleInputKey(char inputKey){
     outputChangesMade = true;       //assume true for any input even if no changes were actually made.  Requests LCD to be refreshed.
 
     if(timerMode == InputMode){     //handle button behaviors when the system is in input mode
+            switch (inputKey) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    //In Input Mode, any numeric inputs configure the timer duration.
+                    //mode LCD values access:
+                    //  access Input Mode's second string line, which contains the timer duration
+                    //  access the focusInputPositions array at its last accessed index to determine which
+                    //    numeric value should be modified next (mod 3 to stay within the array)
+                    //  set the appropriate index of the second Input Mode string as defined by the retrieved 
+                    //    focusInputPosition to equal the key that was pressed
+                    modeLCDvalues[InputMode + 1][focusInputPositions[(focusInputPositionsIdx++)%3]] = inputKey;
 
+                    //handle the edge case where times are greater than 9:59 to reduce the times back down to the defined upper limit of 9:59
+                    if(modeLCDvalues[InputMode + 1][DurationInputMinutesIndex] == '9' && modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] > '5'){
+                        modeLCDvalues[InputMode + 1][DurationInputMinutesIndex]   = '9';    //9:xx
+                        modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] = '5';    //9:5x
+                        modeLCDvalues[InputMode + 1][DurationInputSecondsIndex]   = '9';    //9:59
+                        focusInputPositionsIdx = 0;                                         //reset focus input position index to 0 to minimize input confusion
+                    }
+                    break;
                 
-                case 'a':
+                case 'a':           //button press A is defined to be the trigger that switches the timer to countdown mode
+                    timerMode = CountdownMode;      //set the timer to countdown mode
+                    //push the input number to Countdown Mode strings
+                    modeLCDvalues [CountdownMode + 1][CountdownMinutesIndex]   = modeLCDvalues[InputMode + 1][DurationInputMinutesIndex];   //inherit minutes from latest input
+                    modeLCDvalues [CountdownMode + 1][Countdown10SecondsIndex] = modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex]; //inherit 10's of seconds from latest input
+                    modeLCDvalues [CountdownMode + 1][CountdownSecondsIndex]   = modeLCDvalues[InputMode + 1][DurationInputSecondsIndex];   //inherit seconds from latest input
+                    break;
+            }
         return;
     }
 
