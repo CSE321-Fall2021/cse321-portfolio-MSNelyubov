@@ -118,7 +118,7 @@ int focusInputPositions[] = {
 };
 int focusInputPositionsIdx = 0;  //the position of the input value index that is currently being modified (if in Input Mode)
 
-int buttonPressed = 0;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
+int buttonPressed = false;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
 char charPressed = '\0';    //the character on the input matrix keypad which is currently pressed down.  Defaults to '\0' when no key is pressed.
                             //undefined behavior when more than one key is pressed at the same time
 
