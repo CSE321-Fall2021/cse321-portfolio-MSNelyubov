@@ -115,9 +115,6 @@ void switchToCountdownMode();
 
 int timerMode;              //The timer mode defines what behavior will be undertaken due to a given keypad input
 
-int inputModeIndex = 0;         //the position of the input character
-int countdownStartValue = -1;   //countdown start value: how long the timer should run for, in seconds, just afer starting up.  Default to -1 as "no input received" state
-
 int row = 0;                //the row currently being supplied a non-zero voltage
 int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
 
