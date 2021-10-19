@@ -120,14 +120,6 @@ int timerMode = InputMode;              //The timer mode defines what behavior w
 int keypadVccRow = 0;       //the row currently being supplied a non-zero voltage to scan for user input
 int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
 
-
-int focusInputPositions[] = {
-    DurationInputSecondsIndex, 
-    DurationInput10SecondsIndex, 
-    DurationInputMinutesIndex
-};
-int focusInputPositionsIdx = 0;  //the position of the input value index that is currently being modified (if in Input Mode)
-
 int outputChangesMade = true;      //flag to indicate if the output to the LCD needs to be refreshed.  Start at 1 to populate the initial display
 
 int buttonPressed = false;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
@@ -273,19 +265,17 @@ void handleInputKey(char inputKey){
             case '9':
                     //In Input Mode, any numeric inputs configure the timer duration.
                     //mode LCD values access:
-                    //  access Input Mode's second string line, which contains the timer duration
-                    //  access the focusInputPositions array at its last accessed index to determine which
-                    //    numeric value should be modified next (mod 3 to stay within the array)
-                    //  set the appropriate index of the second Input Mode string as defined by the retrieved 
-                    //    focusInputPosition to equal the key that was pressed
-                    modeLCDvalues[InputMode + 1][focusInputPositions[(focusInputPositionsIdx++)%3]] = inputKey;
+                    //  Shift all existing numeric values one position to the left (lose most significant digit)
+                    //  insert the most recently input value in lowest index
+                    modeLCDvalues[InputMode + 1][DurationInputMinutesIndex]   = modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex];      //shift value from 10s of seconds to minutes
+                    modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] = modeLCDvalues[InputMode + 1][DurationInputSecondsIndex];        //shift value from seconds to 10s of seconds
+                    modeLCDvalues[InputMode + 1][DurationInputSecondsIndex]   = inputKey;                                                       //set seconds value to the latest input
 
                     //handle the edge case where times are greater than 9:59 to reduce the times back down to the defined upper limit of 9:59
                     if(modeLCDvalues[InputMode + 1][DurationInputMinutesIndex] == '9' && modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] > '5'){
                         modeLCDvalues[InputMode + 1][DurationInputMinutesIndex]   = '9';    //9:xx
                         modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] = '5';    //9:5x
                         modeLCDvalues[InputMode + 1][DurationInputSecondsIndex]   = '9';    //9:59
-                        focusInputPositionsIdx = 0;                                         //reset focus input position index to 0 to minimize input confusion
                     }
                     break;
                 
@@ -312,7 +302,6 @@ void handleInputKey(char inputKey){
                 break;
             case 'd':           //button press D is defined to be the trigger that switches the timer to Input Mode
                 timerMode = InputMode;
-                focusInputPositionsIdx = 0;     //reset focus input position index to 0 to minimize input confusion
                 break;
         }
         return;     //return to avoid jumping into any other mode handler
@@ -328,7 +317,6 @@ void handleInputKey(char inputKey){
                 break;
             case 'd':           //button press D is defined to be the trigger that switches the timer to Input Mode
                 timerMode = InputMode;
-                focusInputPositionsIdx = 0;     //reset focus input position index to 0 to minimize input confusion
                 break;
         }
         return;     //return to avoid jumping into any other mode handler
