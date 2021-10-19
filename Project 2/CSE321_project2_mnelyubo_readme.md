@@ -78,6 +78,7 @@ The main behavior of this code controls a Nucleo L4R5ZI to
         - connect the Nucleo pin labeled SDA / D14 to the LCD pin labeled SDA using the LCD cable and a jumper wire.
         - connect the Nucleo pin labeled SCL / D15 to the LCD pin labeled SCL using the LCD cable and a jumper wire.
 
+        - TODO: connect LEDs to signal input key sensed and if output mode is Alarm
 7. Click on the play button labeled "Run Program" to begin executing the code on the Nucleo
 
 
