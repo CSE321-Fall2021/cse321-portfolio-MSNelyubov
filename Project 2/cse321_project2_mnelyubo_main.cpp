@@ -123,8 +123,8 @@ int logLine = 0;            //debugging utility to notify how many lines have be
 int outputChangesMade = true;      //flag to indicate if the output to the LCD needs to be refreshed.  Start at 1 to populate the initial display
 
 int buttonPressed = false;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
-char charPressed = '\0';    //the character on the input matrix keypad which is currently pressed down.  Defaults to '\0' when no key is pressed.
-                            //undefined behavior when more than one key is pressed at the same time
+char charPressed = '\0';    //The character on the input matrix keypad which is currently pressed down.  The variable defaults to '\0' when no key is pressed.
+                            //system behavior is UNDEFINED when more than one key is pressed at the same time
 
 // MatrixDim + 1 used as second dimension because of null terminator in each string
 char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
