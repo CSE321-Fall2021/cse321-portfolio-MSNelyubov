@@ -273,7 +273,6 @@ void handleInputKey(char inputKey){
 
                     //handle the edge case where times are greater than 9:59 to reduce the times back down to the defined upper limit of 9:59
                     if(modeLCDvalues[InputMode + 1][DurationInputMinutesIndex] == '9' && modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] > '5'){
-                        modeLCDvalues[InputMode + 1][DurationInputMinutesIndex]   = '9';    //9:xx
                         modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] = '5';    //9:5x
                         modeLCDvalues[InputMode + 1][DurationInputSecondsIndex]   = '9';    //9:59
                     }
