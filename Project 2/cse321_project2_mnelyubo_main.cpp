@@ -117,7 +117,7 @@ void switchToCountdownMode();
 
 int timerMode = InputMode;              //The timer mode defines what behavior will be undertaken due to a given keypad input. Begin the timer in Input Mode.
 
-int row = 0;                //the row currently being supplied a non-zero voltage
+int keypadVccRow = 0;       //the row currently being supplied a non-zero voltage to scan for user input
 int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
 
 
@@ -186,7 +186,7 @@ int main() {
     while (1) {
 
         //supply voltage to one output row at a time
-        switch (row){
+        switch (keypadVccRow){
             case 0:
                 GPIOC->ODR |= 0x100;        //supply voltage to the row of keypad buttons with labels *0#D
                 break;
@@ -210,8 +210,8 @@ int main() {
 
             thread_sleep_for(KeyPadFallingEdgeBufferTime);   //wait to give any falling edge triggers a chance to resolve before proceeding
 
-            row++;                          //update the row target to poll the next row
-            row%=4;
+            keypadVccRow++;                          //update the row target to poll the next row
+            keypadVccRow%=MatrixDim;
         }
 
         populateLcdOutput();                //refresh the LCD output at the same rate as inputs are polled
@@ -223,14 +223,14 @@ int main() {
 
 //The following set of functions are used as handlers for the rising and falling edge behaviors of keypad buttons.
 //All of the following eight functions serve to configure the inputs for handleMatrixButtonevent().
-void rising_isr_abc(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  ColABC, row);}
-void falling_isr_abc(void){handleMatrixButtonEvent(FallingEdgeInterrupt, ColABC, row);}
-void rising_isr_369(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col369, row);}
-void falling_isr_369(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col369, row);}
-void rising_isr_258(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col258, row);}
-void falling_isr_258(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col258, row);}
-void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col147, row);}
-void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147, row);}
+void rising_isr_abc(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  ColABC, keypadVccRow);}
+void falling_isr_abc(void){handleMatrixButtonEvent(FallingEdgeInterrupt, ColABC, keypadVccRow);}
+void rising_isr_369(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col369, keypadVccRow);}
+void falling_isr_369(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col369, keypadVccRow);}
+void rising_isr_258(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col258, keypadVccRow);}
+void falling_isr_258(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col258, keypadVccRow);}
+void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col147, keypadVccRow);}
+void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147, keypadVccRow);}
 
 
 /**
