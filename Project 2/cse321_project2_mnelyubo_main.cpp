@@ -389,4 +389,3 @@ void tickCountdownTimer(){
     timerMode = AlarmMode;
 }
 
-
