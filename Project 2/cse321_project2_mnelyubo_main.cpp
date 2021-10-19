@@ -113,7 +113,7 @@ void switchToCountdownMode();
   *    Global  Variables    *
   ***************************/
 
-int timerMode;              //The timer mode defines what behavior will be undertaken due to a given keypad input
+int timerMode = InputMode;              //The timer mode defines what behavior will be undertaken due to a given keypad input. Begin the timer in Input Mode.
 
 int row = 0;                //the row currently being supplied a non-zero voltage
 int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
@@ -176,8 +176,6 @@ int main() {
     populateLcdOutput();            //populate initial LCD text
 
     countdownTicker.attach(&tickCountdownTimer, 1s);        //Attach the function that operates the Countdown mode to the ticket that triggers it once per second
-
-    timerMode = InputMode;          //begin execution with the timer in Input Mode
 
     printf("\n\n== Initialized ==\n");
 
