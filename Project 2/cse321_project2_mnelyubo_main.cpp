@@ -343,14 +343,13 @@ void switchToCountdownMode() {
 void populateLcdOutput(){
     if(!outputChangesMade) return;      //minimize display signals by only refreshing when output changes have been made
     outputChangesMade = false;
-    //refresh the LCD display
-    //lcdObject.clear();
+    //refresh each line of the LCD display
     for(char line = 0; line < ROW; line++){
         char* printVal = modeLCDvalues[timerMode + line];
 
         printf("ll:%d Attempting to append [%s] to line %d\n", logLine++, printVal, line);
-        lcdObject.setCursor(0, line);                       //reset cursor position to line 0
-        lcdObject.print(printVal);                          //sent print request to configure line 0
+        lcdObject.setCursor(0, line);                       //reset cursor to position 0 of the current line
+        lcdObject.print(printVal);                          //sent print request to configure the text of the line
     }
 }
 
