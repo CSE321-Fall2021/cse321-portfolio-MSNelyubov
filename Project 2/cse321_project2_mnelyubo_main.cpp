@@ -62,6 +62,8 @@
 #define StoppedMode   0x4
 #define AlarmMode     0x6
 
+#define ModeCount 4
+
 //Input Duration string index values correspoinding to indexes in the string array modeLCDvalues
 #define DurationInputMinutesIndex 11
 #define DurationInput10SecondsIndex 13
@@ -136,7 +138,9 @@ char charPressed = '\0';    //the character on the input matrix keypad which is 
 char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
 
 //LCD output matrix. Access strings as modeLCDvalues[definedMode + LcdLineIndex]
-char modeLCDvalues[8][COL] = {
+//Each string must be exactly COL characters in length so that populateLcdOutput() 
+//  will cleanly update the entire screen without needing to spend clock cycles on a clear() call.
+char modeLCDvalues[ROW * ModeCount][COL] = {
     " Input Duration"," of timer: 0:00",      //Input Mode     LCD Output String
     " Time Remaining","      0:00     ",      //Countdown Mode LCD Output String
     " TIMER  STOPPED","               ",      //Stopped Mode   LCD Output String
