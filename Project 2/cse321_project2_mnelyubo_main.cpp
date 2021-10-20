@@ -369,6 +369,14 @@ void switchToCountdownMode() {
 void populateLcdOutput(){
     if(!outputChangesMade) return;      //minimize display signals by only refreshing when output changes have been made
     outputChangesMade = false;
+
+    //update output LED state for alarm mode condition:
+    if(timerMode == AlarmMode){
+        GPIOB->ODR |= 0x800;                       //send signal High to pin PB11 to indicate that the alarm is going off
+    }else{
+        GPIOB->ODR &= ~(0x800);                       //send signal Low  to pin PB11 to indicate that the alarm is off
+    }
+
     //refresh each line of the LCD display
     for(char line = 0; line < ROW; line++){
         char* printVal = modeLCDvalues[timerMode + line];
