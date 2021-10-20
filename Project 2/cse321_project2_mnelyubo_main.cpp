@@ -158,10 +158,13 @@ Ticker countdownTicker;     //create a ticker that counts down the timer once pe
 Ticker bounceHandlerTicker; //create a ticker that handles input lockout to mitigate bounce
 
 int main() {
-    RCC->AHB2ENR |= 0x4;    //enable RCC for GPIO C
+    RCC->AHB2ENR |= 0x6;    //enable RCC for GPIO ports B and C
 
     GPIOC->MODER |= 0x550000;       //configugure GPIO pins PC8,PC9,PC10,PC11
     GPIOC->MODER &= ~(0xAA0000);    //  as outputs
+
+    GPIOB->MODER |= 0x500000;       //configure GPIO pins PB10,PB11 as outputs
+    GPIOB->MODER &= ~(0xA00000);    //these will be used to control input/alarm indicator LEDs
 
     rowLL.rise(&rising_isr_abc);   //assign interrupt handler for a rising edge event from the column containing buttons a,b,c,d
     rowCL.rise(&rising_isr_369);   //assign interrupt handler for a rising edge event from the column containing buttons 3,6,9,#
@@ -256,10 +259,12 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 
         bounceLockout = bounceTimeoutWindow;       //lock bounce 'mutex' after event is triggered
 
+        GPIOB->ODR |= 0x400;                       //send signal High to pin PB10 to indicate that a button press is detected
         charPressed = keyValues[column][row];               //fetch the char value associated with the index that was retrieved
         printf("ll:%d key pressed: %c.\n",logLine++, charPressed);
         handleInputKey(charPressed);
     }else{
+        GPIOB->ODR &= ~(0x400);                       //send signal Low to pin PB10 to indicate that a button release is detected
         charPressed = '\0';                                 //reset the char value to '\0' as the key has been released
     }
 }
