@@ -248,6 +248,11 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
             return;
         }
 
+        //enforce only one key being pressed down at a time
+        if(charPressed != '\0'){
+            printf("ll:%d Warning: rising edge keystroke detected while already in closed state (%c).  Aborting event.\n",logLine++, charPressed);
+            return;
+        }
 
         bounceLockout = bounceTimeoutWindow;       //lock bounce 'mutex' after event is triggered
 
