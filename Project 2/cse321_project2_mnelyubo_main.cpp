@@ -108,6 +108,9 @@ void handleInputKey(char inputKey);
 //use a 1 Hz ticker to count down the remaining seconds
 void tickCountdownTimer();
 
+//tick down bounce handler
+void tickBounceHandler();
+
 //switch the system to Countdown Mode
 void switchToCountdownMode();
 
@@ -117,6 +120,7 @@ void switchToCountdownMode();
 
 int timerMode = InputMode;              //The timer mode defines what behavior will be undertaken due to a given keypad input. Begin the timer in Input Mode.
 
+int bounceLockout = 0;      //set to bounceTimeoutWindow when a button is pressed down.  Ticks down once a millisecond.  Positive values indicate a button press is likely a duplicate.
 int keypadVccRow = 0;       //the row currently being supplied a non-zero voltage to scan for user input
 int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
 
@@ -150,7 +154,8 @@ InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of 
 InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
 InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
 
-Ticker countdownTicker;
+Ticker countdownTicker;     //create a ticker that counts down the timer once per second
+Ticker bounceHandlerTicker; //create a ticker that handles input lockout to mitigate bounce
 
 int main() {
     RCC->AHB2ENR |= 0x4;    //enable RCC for GPIO C
@@ -172,6 +177,7 @@ int main() {
     populateLcdOutput();            //populate initial LCD text
 
     countdownTicker.attach(&tickCountdownTimer, 1s);        //Attach the function that operates the Countdown mode to the ticket that triggers it once per second
+    bounceHandlerTicker.attach(&tickBounceHandler, 1ms);    //Attach the function that ticks down milliseconds for the bounce lockout to eliminate duplicate events
 
     printf("\n\n== Initialized ==\n");
 
@@ -235,6 +241,16 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
                                                     //These are two separate variables because buttonPressed is global to control input polling.
 
     if(isRisingEdgeInterrupt){
+
+        //prevent duplicate event creation if another button press was just detected
+        if(bounceLockout>0){
+            printf("ll:%d Warning: potential duplicate input detected.  Ignoring.\n", logLine++);
+            return;
+        }
+
+
+        bounceLockout = bounceTimeoutWindow;       //lock bounce 'mutex' after event is triggered
+
         charPressed = keyValues[column][row];               //fetch the char value associated with the index that was retrieved
         printf("ll:%d key pressed: %c.\n",logLine++, charPressed);
         handleInputKey(charPressed);
@@ -387,3 +403,10 @@ void tickCountdownTimer(){
     timerMode = AlarmMode;
 }
 
+/**
+*  This function regularly counts down the bounce lockout in order to prevent duplicate event entries
+*/
+
+void tickBounceHandler(){
+    bounceLockout--;
+}
