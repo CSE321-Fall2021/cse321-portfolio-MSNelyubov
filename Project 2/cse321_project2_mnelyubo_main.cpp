@@ -74,10 +74,10 @@
 #define Countdown10SecondsIndex 8
 #define CountdownSecondsIndex 9
 
-//System Refresh Rates
+//System Time Rates
 #define KeyPadHighInputCycleTime 5
 #define KeyPadFallingEdgeBufferTime 1
-
+#define bounceTimeoutWindow 100
 
 /****************************
   *  Function Declarations  *
