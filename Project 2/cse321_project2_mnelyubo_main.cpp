@@ -272,9 +272,9 @@ void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147,
 * void handleMatrixButtonEvent
 * 
 * Summary of the function:
-*    This function  converts an input event type, row, and column received 
+*    This function converts an input event type, row, and column received 
 *    from an ISR handler into the character that is represented by that 
-*    button press and stores that character to the global variable charPressed.
+*    button press, filters for duplicate inputs, and calls to handle the key press if appropriate.
 *
 * Parameters:   
 *   - int isRisingEdgeInterrupt - 1 indicates that the button that triggered the event was pressed down, 0 indicates that the button was released
@@ -283,22 +283,19 @@ void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147,
 *
 * Return value: None
 *
-* Outputs: 
+* Outputs:      The input detection LED is turned on and off based on whether the incoming interrupt is riding or falling edge, displaying whether or not there is currently an input detected.
 *
 * Description:  
-*    The function spin tests until oscillateLED_L has a value of 0
-*    Whenever oscillateLED_L is 0, the LED will switch on for 2000 ms then off for 500 ms.
-*    After this cycle, the system resumes testing for the condition to begin the cycle again
-*
+*   This function will only update the state of the key press if there is no other key press currently detected.
+*   Two key presses of the same key in short sequence will be ignored to prevent duplicate event handlers from being launched.
+*   If a single non-conflicting key press or release is detected, the global variables charPressed and buttonPressed are set appropriately, and handleInputKey is called if the button was pressed.
 */
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
-    buttonPressed = isRisingEdgeInterrupt;          //a rising edge interrupt occurs when a button is pressed.  
-                                                    //These are two separate variables because buttonPressed is global to control input polling.
-
+    char detectedKey = keyValues[column][row];      //fetch the char value associated with the index that was detected
     if(isRisingEdgeInterrupt){
 
         //prevent duplicate event creation if another button press was just detected
-        if(bounceLockout>0){
+        if(bounceLockout > 0){
             printf("ll:%d Warning: potential duplicate input detected.  Ignoring.\n", logLine++);
             return;
         }
@@ -308,16 +305,19 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
             printf("ll:%d Warning: rising edge keystroke detected while already in closed state (%c).  Aborting event.\n",logLine++, charPressed);
             return;
         }
-
-        bounceLockout = bounceTimeoutWindow;       //lock bounce 'mutex' after event is triggered
+        
+        buttonPressed = isRisingEdgeInterrupt;     //a rising edge interrupt occurs when a button is pressed.  Set to 1 to prevent further polling until key is released
+        bounceLockout = bounceTimeoutWindow;       //lock bounce timeout window after event is triggered to ignore duplicate events
 
         GPIOB->ODR |= 0x400;                       //send signal High to pin PB10 to indicate that a button press is detected
-        charPressed = keyValues[column][row];               //fetch the char value associated with the index that was retrieved
+        charPressed = detectedKey;                 //set the global variable for the currently pressed character to the detected character
         printf("ll:%d key pressed: %c.\n",logLine++, charPressed);
         handleInputKey(charPressed);
     }else{
+        if(detectedKey != charPressed) return;        //Ignore any key release inputs that are not the pressed key
         GPIOB->ODR &= ~(0x400);                       //send signal Low to pin PB10 to indicate that a button release is detected
-        charPressed = '\0';                                 //reset the char value to '\0' as the key has been released
+        charPressed = '\0';                           //reset the char value to '\0' as the key has been released
+        buttonPressed = isRisingEdgeInterrupt;        //once the appropriate key has been verified, update button pressed state to resume polling
     }
 }
 

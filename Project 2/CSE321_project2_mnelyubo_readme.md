@@ -210,7 +210,7 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
     - Outputs: 
         - None
     - Global variables accessed:
-        - row
+        - row (global variable keypadVccRow)
         - buttonPressed
         - charPressed
     - Global variables modified:
