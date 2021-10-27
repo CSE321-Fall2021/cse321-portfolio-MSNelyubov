@@ -2,14 +2,28 @@
 *   File Name:      cse321_project2_mnelyubo_main.cpp
 *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
 *   Date Created:   10/10/2021
-*   Last Modified:  10/15/2021
-*   Purpose:        Extract input from a 4x4 keypad to act as the source of user 
-*                     input to control a timer that will display its current
-*                     mode behavior through an LCD. 
-*
+*   Last Modified:  10/27/2021
+*   Purpose:        
+*               This program takes inputs from a 4x4 matrix keypad to control a timer.
+*               Timer mode-based text and input/remaining time are output to a connected LCD.
+*               
+*               The main function of the program initializes the system by configuring a set of four GPIO pins as
+*                 outputs to supply voltage to the keypad, assigning event handlers to the rising and falling edges 
+*                 of input interrupts that are connected to the keypad, and setting the initial timer mode to input.
+
+*               After the initialization is complete, the main function cycles through the four output channels, 
+*                 providing power to one channel at a time and proceeding to the next input after a short time interval 
+*                 in which no input keystroke is detected.  This allows a fast response time to any of the 16 keys and 
+*                 eliminates the opportunity for duplicate inputs to be detected due to a single key press.
+*               
 *   Functions:      
+*               populateLcdOutput
 *               handleMatrixButtonEvent
 *               handleInputKey
+*               tickCountdownTimer
+*               tickBounceHandler
+*               switchToCountdownMode
+*               
 *               The following set of functions are used as handlers for the 
 *                 rising and falling edge behaviors of keypad buttons:
 *                 * rising_isr_abc
@@ -25,7 +39,7 @@
 *
 *   Inputs:         4x4 matrix array input buttons
 *
-*   Outputs:        Serial output, LCD display (TBD), 2 LED channels (TBD)
+*   Outputs:        LCD display, 2 LED channels
 *
 *   Constraints:    in order to avoid undefined behavior, no more than one
 *                     keypad button should be pressed at any point in time
@@ -96,8 +110,8 @@ void falling_isr_369(void);
 void falling_isr_258(void);
 void falling_isr_147(void);
 
-//output to lCD
-void populateLcdOutput();   //TODO: handle LED outputs relevant for the mode as well
+//output to LCD and configure LED states based on the mode
+void populateLcdOutput();
 
 //declare general handler for Matrix keypad input events
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);
@@ -118,22 +132,41 @@ void switchToCountdownMode();
   *    Global  Variables    *
   ***************************/
 
-int timerMode = InputMode;              //The timer mode defines what behavior will be undertaken due to a given keypad input. Begin the timer in Input Mode.
+//This value controls the mode of the timer.
+//This value is used to determine which behaviors to perform when a key is pressed.
+int timerMode = InputMode;
 
-int bounceLockout = 0;      //set to bounceTimeoutWindow when a button is pressed down.  Ticks down once a millisecond.  Positive values indicate a button press is likely a duplicate.
-int keypadVccRow = 0;       //the row currently being supplied a non-zero voltage to scan for user input
-int logLine = 0;            //debugging utility to notify how many lines have been printed for understanding otherwise identical output
+// This value is set to a defined (bounceTimeoutWindow) quantity of milliseconds when a button is pressed down.
+// This value is ticked down every millisecond by the function tickBounceHandler.
+// If the variable is accessed by handleMatrixButtonEvent while the value is positive, this indicates that a button press is most likely a duplicate.
+int bounceLockout = 0;
 
-int outputChangesMade = true;      //flag to indicate if the output to the LCD needs to be refreshed.  Start at 1 to populate the initial display
+//This value indicates the only row that is to be supplied power.
+//This value is used to determine which keypad input was pressed in the function handleMatrixButtonEvent().
+int keypadVccRow = 0;
 
-int buttonPressed = false;      //boolean for if a keypad number that is currently live has been pressed down.  Used to halt row oscillation until it is opened.
-char charPressed = '\0';    //The character on the input matrix keypad which is currently pressed down.  The variable defaults to '\0' when no key is pressed.
-                            //system behavior is UNDEFINED when more than one key is pressed at the same time
+//TODO: remove all printf's and instances of logLine
+int logLine = 0;                //debugging utility to notify how many lines have been printed for understanding otherwise identical output
 
+//Boolean flag to indicate if the output to the LCD needs to be refreshed.
+//The initial value is 1 to populate the display during startup.
+int outputChangesMade = true;
+
+//This (boolean) variable indicates if any button is currently pressed.
+//A value of 1 means some button is pressed and 0 means no button is pressed.
+//The polling of rows will be halted as long as this value is true.
+int buttonPressed = false;
+
+//The character on the input matrix keypad which is currently pressed down.  
+//The variable defaults to '\0' when no key is pressed.
+//system behavior is UNDEFINED when more than one key is pressed at the same time.
+char charPressed = '\0';    
+
+//The matrix of characters maps keypad rows/columns to their associated character
 // MatrixDim + 1 used as second dimension because of null terminator in each string
 char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
 
-//LCD output matrix. Access strings as modeLCDvalues[definedMode + LcdLineIndex]
+//The LCD output matrix. Access strings as modeLCDvalues[definedMode + LcdLineIndex]
 //Each string must be exactly COL characters in length so that populateLcdOutput() 
 //  will cleanly update the entire screen without needing to spend clock cycles on a clear() call.
 char modeLCDvalues[ROW * ModeCount][COL] = {
@@ -149,10 +182,10 @@ char modeLCDvalues[ROW * ModeCount][COL] = {
 
 CSE321_LCD lcdObject(COL,ROW);  //create interface to control the output LCD
 
-InterruptIn rowLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column of the matrix keypad
-InterruptIn rowCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column of the matrix keypad
-InterruptIn rowCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
-InterruptIn rowRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
+InterruptIn colLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column of the matrix keypad
+InterruptIn colCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column of the matrix keypad
+InterruptIn colCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
+InterruptIn colRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
 
 Ticker countdownTicker;     //create a ticker that counts down the timer once per second
 Ticker bounceHandlerTicker; //create a ticker that handles input lockout to mitigate bounce
@@ -166,15 +199,15 @@ int main() {
     GPIOB->MODER |= 0x500000;       //configure GPIO pins PB10,PB11 as outputs
     GPIOB->MODER &= ~(0xA00000);    //these will be used to control input/alarm indicator LEDs
 
-    rowLL.rise(&rising_isr_abc);   //assign interrupt handler for a rising edge event from the column containing buttons a,b,c,d
-    rowCL.rise(&rising_isr_369);   //assign interrupt handler for a rising edge event from the column containing buttons 3,6,9,#
-    rowCR.rise(&rising_isr_258);   //assign interrupt handler for a rising edge event from the column containing buttons 2,5,8,0
-    rowRR.rise(&rising_isr_147);   //assign interrupt handler for a rising edge event from the column containing buttons 1,4,7,*
+    colLL.rise(&rising_isr_abc);   //assign interrupt handler for a rising edge event from the column containing buttons a,b,c,d
+    colCL.rise(&rising_isr_369);   //assign interrupt handler for a rising edge event from the column containing buttons 3,6,9,#
+    colCR.rise(&rising_isr_258);   //assign interrupt handler for a rising edge event from the column containing buttons 2,5,8,0
+    colRR.rise(&rising_isr_147);   //assign interrupt handler for a rising edge event from the column containing buttons 1,4,7,*
 
-    rowLL.fall(&falling_isr_abc);   //assign interrupt handler for a falling edge event from the column containing buttons a,b,c,d
-    rowCL.fall(&falling_isr_369);   //assign interrupt handler for a falling edge event from the column containing buttons 3,6,9,#
-    rowCR.fall(&falling_isr_258);   //assign interrupt handler for a falling edge event from the column containing buttons 2,5,8,0
-    rowRR.fall(&falling_isr_147);   //assign interrupt handler for a falling edge event from the column containing buttons 1,4,7,*
+    colLL.fall(&falling_isr_abc);   //assign interrupt handler for a falling edge event from the column containing buttons a,b,c,d
+    colCL.fall(&falling_isr_369);   //assign interrupt handler for a falling edge event from the column containing buttons 3,6,9,#
+    colCR.fall(&falling_isr_258);   //assign interrupt handler for a falling edge event from the column containing buttons 2,5,8,0
+    colRR.fall(&falling_isr_147);   //assign interrupt handler for a falling edge event from the column containing buttons 1,4,7,*
 
     lcdObject.begin();              //initialize LCD
     populateLcdOutput();            //populate initial LCD text
@@ -234,10 +267,29 @@ void rising_isr_147(void) {handleMatrixButtonEvent(RisingEdgeInterrupt,  Col147,
 void falling_isr_147(void){handleMatrixButtonEvent(FallingEdgeInterrupt, Col147, keypadVccRow);}
 
 
+
 /**
-*  This function converts an input event type, row, and column received 
+* void handleMatrixButtonEvent
+* 
+* Summary of the function:
+*    This function  converts an input event type, row, and column received 
 *    from an ISR handler into the character that is represented by that 
-*    button press and stores that character to the global variable charPressed.   
+*    button press and stores that character to the global variable charPressed.
+*
+* Parameters:   
+*   - int isRisingEdgeInterrupt - 1 indicates that the button that triggered the event was pressed down, 0 indicates that the button was released
+*   - int column - 0-3 value indicating which column the event was detected on 
+*   - int row    - 0-3 value indicating which row the event occured in, based on which row is currently being supplied a voltage
+*
+* Return value: None
+*
+* Outputs: 
+*
+* Description:  
+*    The function spin tests until oscillateLED_L has a value of 0
+*    Whenever oscillateLED_L is 0, the LED will switch on for 2000 ms then off for 500 ms.
+*    After this cycle, the system resumes testing for the condition to begin the cycle again
+*
 */
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
     buttonPressed = isRisingEdgeInterrupt;          //a rising edge interrupt occurs when a button is pressed.  
@@ -364,7 +416,7 @@ void switchToCountdownMode() {
 
 /**  
 *  This function handles the LCD output data flow based on the modeLCDvalues string array.
-*  This function can't be called from an InterruptIn or basic Ticker context.
+*  This function can't be successfully executed from an InterruptIn or basic Ticker call.
 */
 void populateLcdOutput(){
     if(!outputChangesMade) return;      //minimize display signals by only refreshing when output changes have been made

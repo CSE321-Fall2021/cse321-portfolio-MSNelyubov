@@ -83,8 +83,8 @@ The main behavior of this code controls a Nucleo L4R5ZI to
 
 
 # CSE321_project2_mnelyubo_main.cpp:
-This program takes inputs from a 4x4 matrix keypad to control a timer.  The timer mode and input/remaining
-time are output to a connected LCD (WIP).
+This program takes inputs from a 4x4 matrix keypad to control a timer.
+Timer mode-based text and input/remaining time are output to a connected LCD.
 
 The timer is configured to have the following four modes:
 - Input Mode
@@ -96,16 +96,17 @@ The timer is configured to have the following four modes:
 - Countdown Mode
     - Started by pressing the A key.
     - The LCD will display the remaining timer duration.
+    - Upon ticking down to 0:00, the timer will automatically switch to Alarm Mode.
 
 - Stopped Mode
     - Entered by pressing the B key during the Countdown or Alarm modes.
     - Clears the value of an ongoing countdown and shuts down alarm notifications.
-    - The LCD will display "Timer stopped"
+    - The LCD will display "Timer stopped".
 
 - Alarm Mode
     - The system will automatically switch to this mode from the Countdown mode when the countdown timer reaches 0 seconds remaining.
     - The LCD will dysplay "Times up".
-    - Multiple LEDs will be turned on.
+    - A single pin signal () will be sent high, instructing multiple LEDs to be turned on.
     - Mode can be exited by pressing A, B, or D keys to switch to their corresponding mode, ending the alarm.
 
 The main function of the program initializes the system by configuring a set of four GPIO pins as
@@ -121,25 +122,27 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
 ## Global Declarations
 
 - int timerMode
-    - This value controls the mode of the timer and is used to determine which behaviors to perform when a key is pressed.
+    - This value controls the mode of the timer.
+    - This value is used to determine which behaviors to perform when a key is pressed.
 
-- int inputModeIndex
-    - This value controls the position at which the next number of a duration will be stored in memory
+- int bounceLockout
+    - This value is set to a defined (bounceTimeoutWindow) quantity of milliseconds when a button is pressed down.
+    - This value is ticked down every millisecond by the function tickBounceHandler.
+    - If the variable is accessed by handleMatrixButtonEvent while the value is positive, this indicates that a button press is most likely a duplicate.
 
-- char[] inputString (TBD)
-    - This value holds the current value of the user-input duration
+- int keypadVccRow
+    - This value indicates the only row that is to be supplied power.
+    - This is used to determine which keypad input was pressed in the function handleMatrixButtonEvent().
 
-- int countdownStartValue (TBD)
-    - This value is the converted equivalent of the inputString into an integer quantity of seconds
+- int outputChangesMade
+    - This (boolean) variable indicates if the output to the LCD needs to be refreshed.
+    - The initial value is 1 to populate the display during startup.
 
-- int row
-    - This value indicates the only row that is to be supplied power.  This is used to determine which keypad input was pressed in the function handleMatrixButtonEvent().
-
-- int logLine
-    - This value is used with each serial print statement to distinguish identical outputs in the event of duplicate outputs.  It must be displayed and  incremented with each printf call.
 
 - int buttonPressed
-    - This variable indicates if any button is currently pressed.  A value of 1 means some button is pressed and 0 means no button is pressed.
+    - This (boolean) variable indicates if any button is currently pressed.
+    - A value of 1 means some button is pressed and 0 means no button is pressed.
+    - The polling of rows will be halted as long as this value is true.
     - This is not guaranteed to be correct if multiple buttons are pressed at the same time.
 
 - char charPressed
@@ -153,8 +156,15 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
 ## API and Built-In Elements Used
 - mbed.h
     - InterruptIn objects (4) used to detect button presses on the matrix keypad
+        - colLL (far left keypad column)
+        - colCL (center left keypad column)
+        - colCR (center right keypad column)
+        - colRR (far right keypad column)
+    - Ticker objects (2) used to execute regularly scheduled events
+        - countdownTicker (counts down timer clock)
+        - bounceHandlerTicker (counts down bounce lockout)
 - 1802.h
-    - Interface to LCD
+    - Used to create CSE321_LCD lcdObject (16 Columns, 2 Rows) to control LCD
 - cstdio
     - Used to printf from interrupts as a temporary output channel until the LCD is configured
 - ctime
