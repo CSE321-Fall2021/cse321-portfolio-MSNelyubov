@@ -16,3 +16,6 @@ This project tracks the design and development of a countdown timer which can be
 - CSE321_project2_mnelyubo_main.cpp is the C++ file which implements the core functionality of the countdown timer
 - CSE321_project2_stage2_part1_mnelyubo.pdf provides a high-level overview of the design of the microcontroller behavior
 - 1802.cpp and 1802.h are the library files for interacting with the output LCD
+
+## Project 3
+Coming Soon!
