@@ -322,9 +322,24 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 }
 
 
-/**  
-*  This function handles the keypad input with respect to how that input 
-*    affects the state of the system (as described in the design document) 
+
+/**
+* void handleInputKey
+* 
+* Summary of the function:
+*   This function modifies the mode or duration of the timer based on the specified input to the system.
+*   The action taken as the result of any input depends upon the present mode of the system.
+*
+* Parameters:   
+*   - char inputKey - the rising edge button press that was detected
+*
+* Return value: None
+*
+* Outputs:      The timer mode may be modified as a consequence of this function.
+*
+* Description:  
+*   This function is broken down into handling the input to the system based on the mode of the system.
+*   The branch corresponding with the present mode is selected, and then the case corresponding to the input key is executed, if one exists.
 */
 void handleInputKey(char inputKey){
     outputChangesMade = true;       //assume true for any input even if no changes were actually made.  Requests LCD to be refreshed.

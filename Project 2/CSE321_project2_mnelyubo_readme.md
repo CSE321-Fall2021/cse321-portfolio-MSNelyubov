@@ -200,9 +200,9 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
 
 
 - handleMatrixButtonEvent
-    This function converts an input event type, row, and column received 
-    from an ISR handler into the character that is represented by that 
-    button press and stores that character to the global variable charPressed.
+    - This function converts an input event type, row, and column received from an ISR handler into the character that is represented by that button press.
+    - The function filters for duplicate and conflicting inputs.
+    - Clean inputs will have that input character stored in the global variable charPressed.
     - Inputs: 
         - int isRisingEdgeInterrupt - whether the button is pressed down (1) or released (0)
         - int column - the matrix keypad column in which the button press was detected
@@ -222,18 +222,31 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
             - This function is only called if the input isRisingEdgeInterrupt is true
 
 
-- handleInputKey (WIP)
-    This function handles the keypad input with respect to how that input 
-    affects the state of the system (as described in the design document) 
+- handleInputKey
+    - This function modifies the mode or duration of the timer based on the specified input to the system.  
+    - The action taken as the result of any input depends upon the present mode of the system.
     - Inputs:
         - char inputKey
     - Outputs: 
         - None
     - Global variables accessed:
         - timerMode
-        - inputString
+        - modeLCDvalues
     - Global variables modified:
-        - timerMode may be modified due to certain input keystrokes depending on the present mode
-        - inputString may be modified due to numeric inputs when in the input mode
+        - timerMode may be modified depending on the input and present mode.
+        - The second line of the input mode string in the modeLCDvalues matrix may be modified to represent a different time.
     - Functions called:
-        - TBD
+        - switchToCountdownMode
+            - called when the button A is pressed in certain modes
+
+- switchToCountdownMode
+    --TODO
+
+- populateLcdOutput
+    --TODO
+
+- tickCountdownTimer
+    --TODO
+
+- tickBounceHandler
+    --TODO
