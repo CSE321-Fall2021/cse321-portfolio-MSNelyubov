@@ -240,7 +240,20 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
             - called when the button A is pressed in certain modes
 
 - switchToCountdownMode
-    --TODO
+    - This function sets the system to the Countdown timer and sets its initial value to match the input.
+    - This function is to be run when the A key is pressed.
+    - Inputs:
+        - None
+    - Outputs: 
+        - The LCD output text is configured, but not instructed to display.
+    - Global variables accessed:
+        - timerMode
+        - modeLCDvalues
+    - Global variables modified:
+        - timerMode is set to CountdownMode.
+        - The second line of the modeLCDvalues matrix for the countdown mode will be modified to represent the input time.
+    - Functions called:
+        - None
 
 - populateLcdOutput
     --TODO
