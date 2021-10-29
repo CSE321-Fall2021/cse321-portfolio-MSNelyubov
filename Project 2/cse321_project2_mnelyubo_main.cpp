@@ -415,9 +415,23 @@ void handleInputKey(char inputKey){
     }
 }
 
-/**  
+
+/**
+* void switchToCountdownMode
+* 
+* Summary of the function:
 *  This function sets the Countdown timer to its initial value.
 *  This function should be run when the A key is pressed.
+*
+* Parameters:   
+*
+* Return value: None
+*
+* Outputs:    The LCD output text is configured, but not instructed to display.
+*
+* Description:  
+*   The function first switches the timer mode to countdown mode.
+*   The function then sets the timer string of coutdown mode to equal the timer string of input mode
 */
 void switchToCountdownMode() {
     timerMode = CountdownMode;      //set the timer to countdown mode
@@ -429,9 +443,24 @@ void switchToCountdownMode() {
 }
 
 
-/**  
+/**
+* void populateLcdOutput
+* 
+* Summary of the function:
 *  This function handles the LCD output data flow based on the modeLCDvalues string array.
+*  This function controls the output state of the alarm LED signal.
 *  This function can't be successfully executed from an InterruptIn or basic Ticker call.
+*
+* Parameters:   None
+*
+* Return value: None
+*
+* Outputs:    The LCD output is set based on the .
+*
+* Description:  
+*   This function will only attempt to send a request to the LCD if the indicator that the output to display has been modified in any way.
+*   This function will send a digital high signal to pin (TODO) if and only if the timer is currently in Alarm Mode.  Otherwise, it will turn off the signal.
+*   This function will iterate over each line of the LCD output display and pull the corresponding string that is assigned to be displayed in the present state of the timer mode, as defined by the modeLCDvalues matrix.
 */
 void populateLcdOutput(){
     if(!outputChangesMade) return;      //minimize display signals by only refreshing when output changes have been made
