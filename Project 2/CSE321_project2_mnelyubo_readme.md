@@ -53,15 +53,15 @@ The main behavior of this code controls a Nucleo L4R5ZI to
 3. Select "Project 2" as the Active program in Mbed studio
 4. Connect the Nucleo-L4R5ZI to your computer via USB cable
 5. Select Nucleo-L4R5ZI as the Target in Mbed studio
-6. (TODO: create schematic of all connections) Connect the Nucleo to the input and output peripherals through the breadboard
+6. Connect the Nucleo to the input and output peripherals through the breadboard
     - connect power supply lanes
         - connect a Nucleo pin labeled GND to the - bus of the breadboard
         - connect a Nucleo pin labeled 5V  to the + bus of the breadboard
     - connect input source pins
-        - connect the Nucleo pin labeled A1 to pin 1 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled A2 to pin 2 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled A3 to pin 3 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled A4 to pin 4 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled A1(PC0) to pin 1 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled A2(PC3) to pin 2 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled A3(PC1) to pin 3 of the keypad via jumper wire.
+        - connect the Nucleo pin labeled A4(PC4) to pin 4 of the keypad via jumper wire.
 
         - connect a 1k resistor in between the connection from pin A1 to keypad 1 and the ground bus.
             - this serves to provide a reference to the common ground for the signal
@@ -72,13 +72,22 @@ The main behavior of this code controls a Nucleo L4R5ZI to
         - connect the Nucleo pin labeled PC10 in the pin diagram in sector CN8 to pin 7 of the keypad via jumper wire.
         - connect the Nucleo pin labeled PC11 in the pin diagram in sector CN8 to pin 8 of the keypad via jumper wire.
 
-    - connect output display pins
+    - connect LCD display pins
         - connect the - lane of the breadboard to the LCD pin labeled GND using the LCD cable and a jumper wire.
         - connect the + lane of the breadboard to the LCD pin labeled VCC using the LCD cable and a jumper wire.
         - connect the Nucleo pin labeled SDA / D14 to the LCD pin labeled SDA using the LCD cable and a jumper wire.
         - connect the Nucleo pin labeled SCL / D15 to the LCD pin labeled SCL using the LCD cable and a jumper wire.
 
-        - TODO: connect LEDs to signal input key sensed and if output mode is Alarm
+	- connect "input detected" indicator LED
+        - connect the Nucleo pin labeled PB10 in the pin diagram in sector CN10 to the anode of the indicator LED.
+		- connect the cathode of the indicator LED to a 1k resistor.
+		- connect the other end of the 1k resistor to the common ground.
+	
+	- connect alarm LEDs
+		- connect the Nucleo pin labeled PB11 in the pin diagram in sector CN10 to the anodes of three LEDs.
+		- connect the cathodes of each LED to a different 1k resistor.
+		- connect the free end of each 1k resistor to the common ground.
+		- this should result in three branches consisting of one LED and one resistor each connected in parallel between pin PB11 and ground.
 7. Click on the play button labeled "Run Program" to begin executing the code on the Nucleo
 
 
