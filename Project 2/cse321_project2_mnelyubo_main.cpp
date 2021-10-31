@@ -455,11 +455,13 @@ void switchToCountdownMode() {
 *
 * Return value: None
 *
-* Outputs:    The LCD output is set based on the .
+* Outputs:    
+*   The LCD output is set based on the current timer Mode and (if in countdown mode) elapsed time.
+*   Pin 11 from port B will be set to high if the timer is currently in alarm mode. Otherwise, it will be turned off.
 *
 * Description:  
-*   This function will only attempt to send a request to the LCD if the indicator that the output to display has been modified in any way.
-*   This function will send a digital high signal to pin (TODO) if and only if the timer is currently in Alarm Mode.  Otherwise, it will turn off the signal.
+*   This funciton will only attempt to send a request to modify the LCD if the global variable outputChangesMade is true.
+*   This function will send a digital high signal to pin (PB11) if and only if the timer is currently in Alarm Mode.  Otherwise, it will turn off the signal.
 *   This function will iterate over each line of the LCD output display and pull the corresponding string that is assigned to be displayed in the present state of the timer mode, as defined by the modeLCDvalues matrix.
 */
 void populateLcdOutput(){
@@ -476,19 +478,34 @@ void populateLcdOutput(){
     //refresh each line of the LCD display
     for(char line = 0; line < ROW; line++){
         char* printVal = modeLCDvalues[timerMode + line];
-
         printf("ll:%d Attempting to append [%s] to line %d\n", logLine++, printVal, line);
-        lcdObject.setCursor(0, line);                       //reset cursor to position 0 of the current line
-        lcdObject.print(printVal);                          //sent print request to configure the text of the line
+        lcdObject.setCursor(0, line);         //reset cursor to position 0 of the line to be written to
+        lcdObject.print(printVal);            //send a print request to configure the text of the line
     }
 }
 
-/**  
-*  This function counts down the output string of the timer by 1 when the system
-*    is in Countdown Mode
+
+/**
+* void tickCountdownTimer
+* 
+* Summary of the function:
+*  This function counts down the output string of the timer by 1 when the system is in Countdown Mode
+*
+* Parameters:   None
+*
+* Return value: None
+*
+* Outputs:      None
+*
+* Description:  
+*   This function will only make any changes if the timer is in countdown mode
+*   This function will create changes that will require a new execution of populateLcdOutput in order to be populate to the LCD.
+*   This function will attempt to decrement the seconds, then tens of seconds, and finally minutes until it finds a character with a value greater than '0'.
+*   When decrementing higher significance digits, all less significant digits will be reset to their maximum value.
+*   This function will switch the timer mode to Alarm Mode if and only if the countdown mode remaining time is 0:00
 */
 void tickCountdownTimer(){
-    if(timerMode != CountdownMode) return;
+    if(timerMode != CountdownMode) return;  //only make any changes if the timer is in countdown mode
     outputChangesMade = true;
 
     //if the seconds digit is greater than 0, decrement it and exit the function
@@ -499,7 +516,7 @@ void tickCountdownTimer(){
 
     //if the tens of seconds digit is greater than 0, decrement it, set seconds to 9, and exit the function
     if(modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex] > '0'){
-        modeLCDvalues [CountdownMode + 1][Countdown10SecondsIndex]--;
+        modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex]--;
         modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex] = '9';
         return;
     }
@@ -518,9 +535,22 @@ void tickCountdownTimer(){
 }
 
 /**
-*  This function regularly counts down the bounce lockout in order to prevent duplicate event entries
+* void tickBounceHandler
+* 
+* Summary of the function:
+*  This function counts down the bounce lockout in order to prevent duplicate events from being generated due to a single button press.
+*
+* Parameters:   None
+*
+* Return value: None
+*
+* Outputs:      None
+*
+* Description:  
+*   The global variable bounceLockout will cause button presses to be ignored when it is set to a value greater than 0
+*   bounceLockout will not be decremented for values less than zero to avoid an accidental lockout caused by an integer underflow 
 */
-
 void tickBounceHandler(){
-    bounceLockout--;
+    if(bounceLockout > 0)
+        bounceLockout--;
 }

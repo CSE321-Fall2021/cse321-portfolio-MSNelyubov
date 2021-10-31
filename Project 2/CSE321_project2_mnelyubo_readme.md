@@ -256,10 +256,53 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
         - None
 
 - populateLcdOutput
-    --TODO
+    - This funciton will only attempt to send a request to modify the LCD if the global variable outputChangesMade is true.
+    - This function handles the LCD output data flow based on the modeLCDvalues string array.
+    - This function controls the output state of the alarm LED signal.
+    - Modification of LCD output can't be successfully executed from an InterruptIn or basic Ticker call.
+    - Inputs:
+        - None
+    - Outputs: 
+        - The LCD output is set based on the current timer Mode and (if in countdown mode) elapsed time.
+        - Pin 11 from port B will be set to high if the timer is currently in alarm mode. Otherwise, it will be turned off.
+    - Global variables accessed:
+        - outputChangesMade
+        - timerMode
+        - modeLCDvalues
+        - lcdObject
+    - Global variables modified:
+        - outputChangesMade will be set to false if the body of the function is to be executed
+        - The second line of the modeLCDvalues matrix for the countdown mode will be modified to represent the input time.
+    - Functions called:
+        - None
 
 - tickCountdownTimer
-    --TODO
+    - This function counts down the remaining time of the timer by 1 second when the system is in Countdown Mode.
+    - This funciton will switch the timer mode to Alarm Mode when the countdown timer is 0:00.
+    -Inputs:
+        - None
+    - Outputs: 
+        - None
+    - Global variables accessed:
+        - outputChangesMade
+        - timerMode
+        - modeLCDvalues
+    - Global variables modified:
+        - outputChangesMade will be set to true if the timer mode is currently CountdownMode.
+        - The second line of the modeLCDvalues matrix for the countdown mode will be modified to represent the remaining time.
+        - timerMode will be set to AlarmMode when the countdown timer reaches 0:00.
+    - Functions called:
+        - None
 
 - tickBounceHandler
-    --TODO
+    - This function counts down the bounce lockout in order to prevent duplicate events from being generated due to a single button press.
+    - Inputs:
+        - None
+    - Outputs: 
+        - None
+    - Global variables accessed:
+        - bounceLockout
+    - Global variables modified:
+        - bounceLockout is decremented if it is greater than 0
+    - Functions called:
+        - None
