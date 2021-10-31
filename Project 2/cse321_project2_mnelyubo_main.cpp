@@ -145,9 +145,6 @@ int bounceLockout = 0;
 //This value is used to determine which keypad input was pressed in the function handleMatrixButtonEvent().
 int keypadVccRow = 0;
 
-//TODO: remove all printf's and instances of logLine
-int logLine = 0;                //debugging utility to notify how many lines have been printed for understanding otherwise identical output
-
 //Boolean flag to indicate if the output to the LCD needs to be refreshed.
 //The initial value is 1 to populate the display during startup.
 int outputChangesMade = true;
@@ -213,8 +210,6 @@ int main() {
     populateLcdOutput();            //populate initial LCD text
     
     bounceHandlerTicker.attach(&tickBounceHandler, 1ms);    //Attach the function that ticks down milliseconds for the bounce lockout to eliminate duplicate events
-
-    printf("\n\n== Initialized ==\n");
 
     while (1) {
 
@@ -295,13 +290,11 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 
         //prevent duplicate event creation if another button press was just detected
         if(bounceLockout > 0){
-            printf("ll:%d Warning: potential duplicate input detected.  Ignoring.\n", logLine++);
             return;
         }
 
         //enforce only one key being pressed down at a time
         if(charPressed != '\0'){
-            printf("ll:%d Warning: rising edge keystroke detected while already in closed state (%c).  Aborting event.\n",logLine++, charPressed);
             return;
         }
         
@@ -310,7 +303,6 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 
         GPIOB->ODR |= 0x400;                       //send signal High to pin PB10 to indicate that a button press is detected
         charPressed = detectedKey;                 //set the global variable for the currently pressed character to the detected character
-        printf("ll:%d key pressed: %c.\n",logLine++, charPressed);
         handleInputKey(charPressed);
     }else{
         if(detectedKey != charPressed) return;        //Ignore any key release inputs that are not the pressed key
@@ -482,7 +474,6 @@ void populateLcdOutput(){
     //refresh each line of the LCD display
     for(char line = 0; line < ROW; line++){
         char* printVal = modeLCDvalues[timerMode + line];
-        printf("ll:%d Attempting to append [%s] to line %d\n", logLine++, printVal, line);
         lcdObject.setCursor(0, line);         //reset cursor to position 0 of the line to be written to
         lcdObject.print(printVal);            //send a print request to configure the text of the line
     }
