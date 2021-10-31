@@ -249,12 +249,13 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
     - Global variables accessed:
         - timerMode
         - modeLCDvalues
+        - countdownTicker
     - Global variables modified:
         - timerMode is set to CountdownMode.
         - countdownTicker is reattached by this function call in order to synchronize ticks with the button press.
         - The second line of the modeLCDvalues matrix for the countdown mode will be modified to represent the input time.
     - Functions called:
-        - None
+        - tickCountdownTimer
 
 - populateLcdOutput
     - This funciton will only attempt to send a request to modify the LCD if the global variable outputChangesMade is true.
@@ -278,7 +279,7 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
         - None
 
 - tickCountdownTimer
-    - This function is called by the countdownTicker.  
+    - This function is called by the countdownTicker.
     - This function will only modify the remaining time in Countdown Mode.
     - If called outside of Countdown Mode, this function will instead disable the ticker that is responsible for calling it in order to save resources.
     - This function counts down the remaining time of the timer by 1 second when the system is in Countdown Mode.
@@ -291,10 +292,12 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
         - outputChangesMade
         - timerMode
         - modeLCDvalues
+        - countdownTicker
     - Global variables modified:
         - outputChangesMade will be set to true if the timer mode is currently CountdownMode.
         - The second line of the modeLCDvalues matrix for the countdown mode will be modified to represent the remaining time.
         - timerMode will be set to AlarmMode when the countdown timer reaches 0:00.
+        - countdownTicker will be dettached if the funciton is called while not in Countdown Mode.
     - Functions called:
         - None
 

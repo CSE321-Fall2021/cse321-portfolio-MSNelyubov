@@ -436,6 +436,10 @@ void switchToCountdownMode() {
     //Attach the function that decrements remaining time in the Countdown mode to the ticker that triggers it once per second.
     //Reattachment here resets the duration of the ticker to allow a full second before the first tick down.
     countdownTicker.attach(&tickCountdownTimer, 1s);
+
+    //run an instance of tickCountdownTimer immediately so that an extra second is not added to the set duration.
+    //This prevents a 1-second hang at 0:00 before the alarm goes off.
+    tickCountdownTimer();
 }
 
 
