@@ -211,8 +211,7 @@ int main() {
 
     lcdObject.begin();              //initialize LCD
     populateLcdOutput();            //populate initial LCD text
-
-    countdownTicker.attach(&tickCountdownTimer, 1s);        //Attach the function that operates the Countdown mode to the ticket that triggers it once per second
+    
     bounceHandlerTicker.attach(&tickBounceHandler, 1ms);    //Attach the function that ticks down milliseconds for the bounce lockout to eliminate duplicate events
 
     printf("\n\n== Initialized ==\n");
@@ -432,6 +431,7 @@ void handleInputKey(char inputKey){
 * Description:  
 *   The function first switches the timer mode to countdown mode.
 *   The function then sets the timer string of coutdown mode to equal the timer string of input mode
+*   The function finally reinitializes the countdown ticker to synchronize it with when countdown mode is entered
 */
 void switchToCountdownMode() {
     timerMode = CountdownMode;      //set the timer to countdown mode
@@ -440,6 +440,10 @@ void switchToCountdownMode() {
     modeLCDvalues[CountdownMode + 1][CountdownMinutesIndex]   = modeLCDvalues[InputMode + 1][DurationInputMinutesIndex];   //inherit minutes from latest input
     modeLCDvalues[CountdownMode + 1][Countdown10SecondsIndex] = modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex]; //inherit 10's of seconds from latest input
     modeLCDvalues[CountdownMode + 1][CountdownSecondsIndex]   = modeLCDvalues[InputMode + 1][DurationInputSecondsIndex];   //inherit seconds from latest input
+
+    //Attach the function that decrements remaining time in the Countdown mode to the ticker that triggers it once per second.
+    //Reattachment here resets the duration of the ticker to allow a full second before the first tick down.
+    countdownTicker.attach(&tickCountdownTimer, 1s);
 }
 
 
@@ -498,14 +502,20 @@ void populateLcdOutput(){
 * Outputs:      None
 *
 * Description:  
-*   This function will only make any changes if the timer is in countdown mode
+*   This function is called by the countdownTicker.  It will only modify the remaining time in Countdown Mode.  
+*   If called outside of Countdown Mode, the function will instead disable the ticker that is responsible for calling it in order to save resources.
 *   This function will create changes that will require a new execution of populateLcdOutput in order to be populate to the LCD.
 *   This function will attempt to decrement the seconds, then tens of seconds, and finally minutes until it finds a character with a value greater than '0'.
 *   When decrementing higher significance digits, all less significant digits will be reset to their maximum value.
 *   This function will switch the timer mode to Alarm Mode if and only if the countdown mode remaining time is 0:00
 */
 void tickCountdownTimer(){
-    if(timerMode != CountdownMode) return;  //only make any changes if the timer is in countdown mode
+    //only make any changes if the timer is in countdown mode.  If the timer is not in countdown mode, 
+    //disable the ticker responsible for calling this function
+    if(timerMode != CountdownMode) {
+        countdownTicker.detach();
+        return;
+    }
     outputChangesMade = true;
 
     //if the seconds digit is greater than 0, decrement it and exit the function
