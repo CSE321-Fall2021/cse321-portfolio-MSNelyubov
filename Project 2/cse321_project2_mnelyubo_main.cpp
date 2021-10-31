@@ -473,9 +473,9 @@ void populateLcdOutput(){
 
     //refresh each line of the LCD display
     for(char line = 0; line < ROW; line++){
-        char* printVal = modeLCDvalues[timerMode + line];
-        lcdObject.setCursor(0, line);         //reset cursor to position 0 of the line to be written to
-        lcdObject.print(printVal);            //send a print request to configure the text of the line
+        char* printVal = modeLCDvalues[timerMode + line];   //retrieve the string associated with the current line of the LCD
+        lcdObject.setCursor(0, line);                       //reset cursor to position 0 of the line to be written to
+        lcdObject.print(printVal);                          //send a print request to configure the text of the line
     }
 }
 
