@@ -78,16 +78,17 @@ The main behavior of this code controls a Nucleo L4R5ZI to
         - connect the Nucleo pin labeled SDA / D14 to the LCD pin labeled SDA using the LCD cable and a jumper wire.
         - connect the Nucleo pin labeled SCL / D15 to the LCD pin labeled SCL using the LCD cable and a jumper wire.
 
-	- connect "input detected" indicator LED
+    - connect "input detected" indicator LED
         - connect the Nucleo pin labeled PB10 in the pin diagram in sector CN10 to the anode of the indicator LED.
 		- connect the cathode of the indicator LED to a 1k resistor.
 		- connect the other end of the 1k resistor to the common ground.
-	
-	- connect alarm LEDs
+
+    - connect alarm LEDs
 		- connect the Nucleo pin labeled PB11 in the pin diagram in sector CN10 to the anodes of three LEDs.
 		- connect the cathodes of each LED to a different 1k resistor.
 		- connect the free end of each 1k resistor to the common ground.
 		- this should result in three branches consisting of one LED and one resistor each connected in parallel between pin PB11 and ground.
+
 7. Click on the play button labeled "Run Program" to begin executing the code on the Nucleo
 
 
