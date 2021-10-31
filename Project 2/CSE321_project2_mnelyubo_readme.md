@@ -14,27 +14,30 @@ Contribitor List:
 
 # Features
 The main behavior of this code controls a Nucleo L4R5ZI to
-- act as a countdown timer with set time, count down, alarm, and stop modes
-- take timer configuration inputs from a 4x4 matrix keypad
-- output the current state of the program to an external LCD monitor
+- Act as a countdown timer with set time, count down, alarm, and stop modes
+- Take timer configuration inputs from a 4x4 matrix keypad
+- Output the current state of the program to an external LCD monitor
 
 
 # Required Materials
 
 - Nucleo L4R5ZI
-    - microcontroller on which to execute code and control inputs/outputs
+    - Microcontroller on which to execute code and control inputs/outputs
 
 - 4x4 Matrix keypad
-    - input for microcontroller
+    - Input for microcontroller
 
 - LCD (JHD1804 recommended)
-    - output display for microcontroller
+    - Output display for microcontroller
 
 - LEDs (4)
-    - Two LEDs are sufficient to repersent all necessary outputs, but four are recommended.
+    - One LED to indicate that inputs are detected
+    - Three LEDs to be turned on when the timer is in Alarm Mode
+    
+- 1kΩ resistors (8)
 
 - Jumper Wires and breadboard
-    - used to connect microcontroller with inputs and outputs
+    - Used to connect microcontroller with input and output peripherals
 
 - USB 2.0 A to USB 2.0 Micro B cable
     - Interface between computer and Nucleo
@@ -44,50 +47,51 @@ The main behavior of this code controls a Nucleo L4R5ZI to
 
 
 # Resources and References
-- https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
+- Nucleo L4R5ZI reference manual
+    - https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
 
 
 # Getting Started
 1. Clone the git repository locally
 2. Open the repository with Mbed Studio
 3. Select "Project 2" as the Active program in Mbed studio
-4. Connect the Nucleo-L4R5ZI to your computer via USB cable
-5. Select Nucleo-L4R5ZI as the Target in Mbed studio
+4. Connect the Nucleo L4R5ZI to your computer via USB cable
+5. Select Nucleo L4R5ZI as the Target in Mbed studio
 6. Connect the Nucleo to the input and output peripherals through the breadboard
-    - connect power supply lanes
-        - connect a Nucleo pin labeled GND to the - bus of the breadboard
-        - connect a Nucleo pin labeled 5V  to the + bus of the breadboard
-    - connect input source pins
-        - connect the Nucleo pin labeled A1(PC0) to pin 1 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled A2(PC3) to pin 2 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled A3(PC1) to pin 3 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled A4(PC4) to pin 4 of the keypad via jumper wire.
+    - Connect power supply lanes
+        - Connect a Nucleo pin labeled GND to the - bus of the breadboard
+        - Connect a Nucleo pin labeled 5V  to the + bus of the breadboard
+    - Connect input source pins
+        - Connect the Nucleo pin labeled A1(PC0) to pin 1 of the keypad via jumper wire.
+        - Connect the Nucleo pin labeled A2(PC3) to pin 2 of the keypad via jumper wire.
+        - Connect the Nucleo pin labeled A3(PC1) to pin 3 of the keypad via jumper wire.
+        - Connect the Nucleo pin labeled A4(PC4) to pin 4 of the keypad via jumper wire.
 
-        - connect a 1k resistor in between the connection from pin A1 to keypad 1 and the ground bus.
-            - this serves to provide a reference to the common ground for the signal
-            - add one 1k resistor for each of the four pins
+        - Connect a 1kΩ resistor in between the connection from pin A1 to keypad 1 and the ground bus.
+            - This serves to provide a reference to the common ground for the signal
+            - Add one 1kΩ resistor for each of the four pins
 
-        - connect the Nucleo pin labeled PC8  in the pin diagram in sector CN8 to pin 5 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled PC9  in the pin diagram in sector CN8 to pin 6 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled PC10 in the pin diagram in sector CN8 to pin 7 of the keypad via jumper wire.
-        - connect the Nucleo pin labeled PC11 in the pin diagram in sector CN8 to pin 8 of the keypad via jumper wire.
+        - Connect the Nucleo pin labeled PC8  in the pin diagram in sector CN8 to pin 5 of the keypad via jumper wire.
+        - Connect the Nucleo pin labeled PC9  in the pin diagram in sector CN8 to pin 6 of the keypad via jumper wire.
+        - Connect the Nucleo pin labeled PC10 in the pin diagram in sector CN8 to pin 7 of the keypad via jumper wire.
+        - Connect the Nucleo pin labeled PC11 in the pin diagram in sector CN8 to pin 8 of the keypad via jumper wire.
 
-    - connect LCD display pins
-        - connect the - lane of the breadboard to the LCD pin labeled GND using the LCD cable and a jumper wire.
-        - connect the + lane of the breadboard to the LCD pin labeled VCC using the LCD cable and a jumper wire.
-        - connect the Nucleo pin labeled SDA / D14 to the LCD pin labeled SDA using the LCD cable and a jumper wire.
-        - connect the Nucleo pin labeled SCL / D15 to the LCD pin labeled SCL using the LCD cable and a jumper wire.
+    - Connect LCD display pins
+        - Connect the - lane of the breadboard to the LCD pin labeled GND using the LCD cable and a jumper wire.
+        - Connect the + lane of the breadboard to the LCD pin labeled VCC using the LCD cable and a jumper wire.
+        - Connect the Nucleo pin labeled SDA / D14 to the LCD pin labeled SDA using the LCD cable and a jumper wire.
+        - Connect the Nucleo pin labeled SCL / D15 to the LCD pin labeled SCL using the LCD cable and a jumper wire.
 
-    - connect "input detected" indicator LED
-        - connect the Nucleo pin labeled PB10 in the pin diagram in sector CN10 to the anode of the indicator LED.
-		- connect the cathode of the indicator LED to a 1k resistor.
-		- connect the other end of the 1k resistor to the common ground.
+    - Connect "input detected" indicator LED
+        - Connect the Nucleo pin labeled PB10 in the pin diagram in sector CN10 to the anode of the indicator LED.
+		- Connect the cathode of the indicator LED to a 1kΩ resistor.
+		- Connect the other end of the 1kΩ resistor to the common ground.
 
-    - connect alarm LEDs
-		- connect the Nucleo pin labeled PB11 in the pin diagram in sector CN10 to the anodes of three LEDs.
-		- connect the cathodes of each LED to a different 1k resistor.
-		- connect the free end of each 1k resistor to the common ground.
-		- this should result in three branches consisting of one LED and one resistor each connected in parallel between pin PB11 and ground.
+    - Connect alarm LEDs
+		- Connect the Nucleo pin labeled PB11 in the pin diagram in sector CN10 to the anodes of three LEDs.
+		- Connect the cathodes of each LED to a different 1kΩ resistor.
+		- Connect the free end of each 1kΩ resistor to the common ground.
+		- This should result in three branches consisting of one LED and one resistor each connected in parallel between pin PB11 and ground.
 
 7. Click on the play button labeled "Run Program" to begin executing the code on the Nucleo
 
