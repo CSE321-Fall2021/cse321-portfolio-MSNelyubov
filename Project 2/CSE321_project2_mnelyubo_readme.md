@@ -271,6 +271,21 @@ eliminates the opportunity for duplicate inputs to be detected due to a single k
     - Functions called:
         - tickCountdownTimer
 
+- switchToInputMode
+    - This function sets the timer to input mode and resets the input time to 0:00.
+    - Inputs:
+        - None
+    - Outputs: 
+        - The LCD output text is configured, but not instructed to display.
+    - Global variables accessed:
+        - timerMode
+        - modeLCDvalues
+    - Global variables modified:
+        - timerMode is set to InputMode.
+        - The second line of the modeLCDvalues matrix for the Input mode will be reset to 0:00.
+    - Functions called:
+        - None
+
 - populateLcdOutput
     - This funciton will only attempt to send a request to modify the LCD if the global variable outputChangesMade is true.
     - This function handles the LCD output data flow based on the modeLCDvalues string array.

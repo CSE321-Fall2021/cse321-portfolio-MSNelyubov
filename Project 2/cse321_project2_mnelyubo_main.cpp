@@ -128,6 +128,9 @@ void tickBounceHandler();
 //switch the system to Countdown Mode
 void switchToCountdownMode();
 
+//switch the system to Input Mode
+void switchToInputMode();
+
 /****************************
   *    Global  Variables    *
   ***************************/
@@ -365,6 +368,10 @@ void handleInputKey(char inputKey){
             case 'a':           //button press A is defined to be the trigger that switches the timer to Countdown Mode
                 switchToCountdownMode();
                 break;
+
+            case 'd':           //button press D while in Input Mode resets the input to 0:00
+                switchToInputMode();
+                break;
         }
         return;     //return to avoid jumping into any other mode handler
     }
@@ -384,7 +391,7 @@ void handleInputKey(char inputKey){
                 switchToCountdownMode();
                 break;
             case 'd':           //button press D is defined to be the trigger that switches the timer to Input Mode
-                timerMode = InputMode;
+                switchToInputMode();
                 break;
         }
         return;     //return to avoid jumping into any other mode handler
@@ -399,7 +406,7 @@ void handleInputKey(char inputKey){
                 timerMode = StoppedMode;
                 break;
             case 'd':           //button press D is defined to be the trigger that switches the timer to Input Mode
-                timerMode = InputMode;
+                switchToInputMode();
                 break;
         }
         return;     //return to avoid jumping into any other mode handler
@@ -414,7 +421,7 @@ void handleInputKey(char inputKey){
 *  This function sets the Countdown timer to its initial value.
 *  This function should be run when the A key is pressed.
 *
-* Parameters:   
+* Parameters:   None
 *
 * Return value: None
 *
@@ -441,6 +448,36 @@ void switchToCountdownMode() {
     //This prevents a 1-second hang at 0:00 before the alarm goes off.
     tickCountdownTimer();
 }
+
+
+/**
+* void switchToInputMode
+* 
+* Summary of the function:
+*  This function sets the timer to input mode.
+*  This function resets the input time to 0:00.
+*
+* Parameters:   None
+*
+* Return value: None
+*
+* Outputs:      None
+*
+* Description:
+*   The function first switches the timer mode to input mode.
+*   The function then resets the timer string of input mode to 0:00.
+*/
+void switchToInputMode() {
+    timerMode = InputMode;      //set the timer to input mode
+
+    //push the input mode duration to the Countdown Mode string
+    modeLCDvalues[InputMode + 1][DurationInputMinutesIndex]   = '0';   //set minutes to 0
+    modeLCDvalues[InputMode + 1][DurationInput10SecondsIndex] = '0';   //set 10's of seconds to 0
+    modeLCDvalues[InputMode + 1][DurationInputSecondsIndex]   = '0';   //set seconds to 0
+
+}
+
+
 
 
 /**
