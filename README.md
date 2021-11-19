@@ -18,4 +18,4 @@ This project tracks the design and development of a countdown timer which can be
 - 1802.cpp and 1802.h are the library files for interacting with the output LCD
 
 ## Project 3
-Coming Soon!
+This project tracks the design and development of a used-volume monitor for a container to notify when there is still food present at the end of a work day.  The objective of the project is to minimize food waste by alerting staff of leftover food that can be taken home before leaving work.
