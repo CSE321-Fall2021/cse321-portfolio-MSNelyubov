@@ -182,19 +182,19 @@ char modeLCDvalues[ROW * ModeCount][COL] = {
 
 CSE321_LCD lcdObject(COL,ROW);  //create interface to control the output LCD
 
-InterruptIn colLL(PC_0);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column of the matrix keypad
-InterruptIn colCL(PC_3);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column of the matrix keypad
-InterruptIn colCR(PC_1);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
-InterruptIn colRR(PC_4);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
+InterruptIn colLL(PC_0,PullDown);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column of the matrix keypad
+InterruptIn colCL(PC_3,PullDown);    //declare the connection to pin PC_3 as a source of input interrupts, connected to the center left column of the matrix keypad
+InterruptIn colCR(PC_1,PullDown);    //declare the connection to pin PC_1 as a source of input interrupts, connected to the center right column of the matrix keypad
+InterruptIn colRR(PC_4,PullDown);    //declare the connection to pin PC_4 as a source of input interrupts, connected to the far right column of the matrix keypad
 
 Ticker countdownTicker;     //create a ticker that counts down the timer once per second
 Ticker bounceHandlerTicker; //create a ticker that handles input lockout to mitigate bounce
 
 int main() {
-    RCC->AHB2ENR |= 0x6;    //enable RCC for GPIO ports B and C
+    RCC->AHB2ENR |= 0x12;    //enable RCC for GPIO ports B, E
 
-    GPIOC->MODER |= 0x550000;       //configugure GPIO pins PC8,PC9,PC10,PC11
-    GPIOC->MODER &= ~(0xAA0000);    //  as outputs
+    GPIOE->MODER |= 0x01510;       //configugure GPIO pins PE2, PE4, PE5, PE6
+    GPIOE->MODER &= ~(0x02A20);    //  as outputs
 
     GPIOB->MODER |= 0x500000;       //configure GPIO pins PB10,PB11 as outputs
     GPIOB->MODER &= ~(0xA00000);    //these will be used to control input/alarm indicator LEDs
@@ -219,16 +219,16 @@ int main() {
         //supply voltage to one output row at a time
         switch (keypadVccRow){
             case 0:
-                GPIOC->ODR |= 0x100;        //supply voltage to the row of keypad buttons with labels *0#D
+                GPIOE->ODR |= 0x04;        //supply voltage to the row of keypad buttons with labels *0#D (PE_2)
                 break;
             case 1:
-                GPIOC->ODR |= 0x200;        //supply voltage to the row of keypad buttons with labels 789C
+                GPIOE->ODR |= 0x10;        //supply voltage to the row of keypad buttons with labels 789C (PE_4)
                 break;
             case 2:
-                GPIOC->ODR |= 0x400;        //supply voltage to the row of keypad buttons with labels 456B
+                GPIOE->ODR |= 0x20;        //supply voltage to the row of keypad buttons with labels 456B (PE_5)
                 break;
             case 3:
-                GPIOC->ODR |= 0x800;        //supply voltage to the row of keypad buttons with labels 123A
+                GPIOE->ODR |= 0x40;        //supply voltage to the row of keypad buttons with labels 123A (PE_6)
                 break;
         }
 
@@ -237,7 +237,7 @@ int main() {
         //proceed to scanning the next input if and only if there is 
         //  no closed loop in the current scan set
         if(!buttonPressed){
-            GPIOC->ODR &= ~(0xF00);         //reset voltage to output 0 on all pins
+            GPIOE->ODR &= ~(0x74);         //reset voltage to output 0 on all pins
 
             thread_sleep_for(KeyPadFallingEdgeBufferTime);   //wait to give any falling edge triggers a chance to resolve before proceeding
 
