@@ -32,7 +32,7 @@
 
 // Blinking rate in milliseconds
 #define POLLING_HIGH_TIME     10us
-#define POLLING_CYCLE_TIME_MS 1000
+#define POLLING_CYCLE_TIME_MS 500
 #define ull unsigned long long
 
 void riseHandler();
@@ -62,42 +62,37 @@ int main(){
     //configure pin C9 as an input
     GPIOC->MODER &= ~(0xC0000);
 
-    printf("\nInitial Input State: %d\n", GPIOC->IDR & 0x200);
+    //printf("\nInitial Input State: %d\n", GPIOC->IDR & 0x200);
 
-    timer.start();
-    //printf("=== beginning signal broadcast at %llu ===\n", getTimeSinceStart());
-    GPIOC->ODR |= 0x100;
-    wait_us(10);
-    GPIOC->ODR &= ~(0x100);
-    ull endOfHigh = getTimeSinceStart();
+    while(true){
+        timer.start();
+        //printf("=== beginning signal broadcast at %llu ===\n", getTimeSinceStart());
+        GPIOC->ODR |= 0x100;
+        wait_us(10);
+        GPIOC->ODR &= ~(0x100);
+        ull endOfHigh = getTimeSinceStart();
 
-    thread_sleep_for(60);   //documentation states sleep for 60ms before measuring
-    //printf("=== ended signal broadcast at %llu\n", endOfHigh);
-    
-    int i=0;
-    
-    while(getTimeSinceStart() < POLLING_CYCLE_TIME_MS * 1000){
-        if(riseDetected && fallDetected){
-            ull deltaTime = fallDetected - riseDetected;
-            printf("Rise and Fall Detected! Rise Time: %llu\tFall Time: %llu\tDelta Time: %llu\n", riseDetected, fallDetected, deltaTime);
-            printf("Distance estimate: %llu cm\n", deltaTime / 58);   //documentation states divide by 58 to provide distance in CM
+        thread_sleep_for(60);   //documentation states sleep for 60ms before measuring
+        //printf("=== ended signal broadcast at %llu\n", endOfHigh);
+
+
+        while(getTimeSinceStart() < POLLING_CYCLE_TIME_MS * 1000){
+            if(riseDetected && fallDetected){
+                ull deltaTime = fallDetected - riseDetected;
+                //printf("Rise and Fall Detected! Rise Time: %llu\tFall Time: %llu\tDelta Time: %llu\n", riseDetected, fallDetected, deltaTime);
+                printf("Distance estimate: %llu cm\n", deltaTime / 58);   //documentation states divide by 58 to provide distance in CM
+                riseDetected=false;
+                fallDetected=false;
+            }
         }
+        
+        //prevent half-returns from cascading into the next data point
+        riseDetected=false;
+        fallDetected=false;
 
-        if(riseDetected){
-            printf("Rise detected at %llu\n", riseDetected);
-            riseDetected=false;
-        }
+        timer.stop();
+        timer.reset();
 
-        if(fallDetected){
-            printf("Fall detected at %llu\n", fallDetected);
-            fallDetected=false;
-        }
-
-        i++;
-
-        if(i%0x10000 == 0){
-            printf("Input State: %d\tTimer: %llu\n", GPIOC->IDR & 0x200, getTimeSinceStart());
-        }
     }
     return 0;
 }
@@ -113,9 +108,7 @@ void riseHandler(){
 
 
 //https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
-using namespace std::chrono;
-
-//https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
 unsigned long long getTimeSinceStart() {
+    using namespace std::chrono;
     return duration_cast<microseconds>(timer.elapsed_time()).count();
 }
