@@ -80,7 +80,8 @@ int main(){
             if(riseDetected && fallDetected){
                 ull deltaTime = fallDetected - riseDetected;
                 //printf("Rise and Fall Detected! Rise Time: %llu\tFall Time: %llu\tDelta Time: %llu\n", riseDetected, fallDetected, deltaTime);
-                printf("Distance estimate: %llu cm\n", deltaTime / 58);   //documentation states divide by 58 to provide distance in CM
+                int distance = deltaTime / 58;
+                printf("Distance estimate: %d cm\n", distance);   //documentation states divide by 58 to provide distance in CM
                 riseDetected=false;
                 fallDetected=false;
             }
@@ -107,7 +108,8 @@ void riseHandler(){
 }
 
 
-//https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
+//Access global object timer to get the time since the process began in microseconds
+//code in this function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
 unsigned long long getTimeSinceStart() {
     using namespace std::chrono;
     return duration_cast<microseconds>(timer.elapsed_time()).count();
