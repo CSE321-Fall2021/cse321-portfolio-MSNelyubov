@@ -32,7 +32,7 @@
 
 // Blinking rate in milliseconds
 #define POLLING_HIGH_TIME     10us
-#define POLLING_CYCLE_TIME    10000us
+#define POLLING_CYCLE_TIME_MS 1000
 #define ull unsigned long long
 
 void riseHandler();
@@ -42,8 +42,8 @@ Timer timer;
 
 ull getTimeSinceStart();
 
-ull riseDetected[] = {0,0,0,0,0};
-ull fallDetected[] = {0,0,0,0,0};
+ull riseDetected = 0;
+ull fallDetected = 0;
 
 // DigitalOut trig(PC_8);
 InterruptIn echo(PC_9);
@@ -71,25 +71,31 @@ int main(){
     GPIOC->ODR &= ~(0x100);
     ull endOfHigh = getTimeSinceStart();
 
-
-    printf("=== ended signal broadcast at %llu\n", endOfHigh);
+    thread_sleep_for(60);   //documentation states sleep for 60ms before measuring
+    //printf("=== ended signal broadcast at %llu\n", endOfHigh);
     
     int i=0;
     
-    while(true){
-        for(int j=0;j<5;j++){
-            if(riseDetected[j]){
-                printf("Rise %d detected at %llu\n", j, riseDetected[j]);
-                riseDetected[j]=false;
-            }
-
-            if(fallDetected[j]){
-                printf("Fall %d detected at %llu\n", j, fallDetected[j]);
-                fallDetected[j]=false;
-            }
+    while(getTimeSinceStart() < POLLING_CYCLE_TIME_MS * 1000){
+        if(riseDetected && fallDetected){
+            ull deltaTime = fallDetected - riseDetected;
+            printf("Rise and Fall Detected! Rise Time: %llu\tFall Time: %llu\tDelta Time: %llu\n", riseDetected, fallDetected, deltaTime);
+            printf("Distance estimate: %llu cm\n", deltaTime / 58);   //documentation states divide by 58 to provide distance in CM
         }
+
+        if(riseDetected){
+            printf("Rise detected at %llu\n", riseDetected);
+            riseDetected=false;
+        }
+
+        if(fallDetected){
+            printf("Fall detected at %llu\n", fallDetected);
+            fallDetected=false;
+        }
+
         i++;
-        if(i%0x1000000 == 0){
+
+        if(i%0x10000 == 0){
             printf("Input State: %d\tTimer: %llu\n", GPIOC->IDR & 0x200, getTimeSinceStart());
         }
     }
@@ -98,21 +104,11 @@ int main(){
 
 
 void fallHandler(){
-    for(int i=0;i<5;i++){
-        if(!fallDetected[i]){
-            fallDetected[i]=getTimeSinceStart();
-            break;
-        }
-    }
+    fallDetected=getTimeSinceStart();
 }
 
 void riseHandler(){
-    for(int i=0; i<5; i++){
-        if(!riseDetected[i]){
-            riseDetected[i]=getTimeSinceStart();
-            break;
-        }
-    }
+    riseDetected=getTimeSinceStart();
 }
 
 
