@@ -28,40 +28,54 @@ Thread t1;
 Thread t2;
 Thread t3;
 
+Mutex printer;  //create mutex for controlling access to serial output printing
 
 //the amount of times that output has been called
-int beat1 = 0;
-int beat2 = 0;
-int beat3 = 0;
+int beat[3] = {0,0,0};
 
-Ticker tick;
+Ticker tick1;
+Ticker tick2;
+Ticker tick3;
 
-void outputInit();
-void output();
+void outputInit1();
+void outputInit2();
+void outputInit3();
+void output(int beatThread);
 
 EventQueue eq1(32 * EVENTS_EVENT_SIZE);
+EventQueue eq2(32 * EVENTS_EVENT_SIZE);
+EventQueue eq3(32 * EVENTS_EVENT_SIZE);
 
 int main(){
-    t1.start(callback(&eq1, &EventQueue::dispatch_forever));    //start thread1 to process event queue 1
+    printf("== Beginning execution ==\n");
+    t1.start(callback(&eq1, &EventQueue::dispatch_forever));    //start thread 1 to process event queue 1
+    t2.start(callback(&eq2, &EventQueue::dispatch_forever));    //start thread 2 to process event queue 2
+    t3.start(callback(&eq3, &EventQueue::dispatch_forever));    //start thread 3 to process event queue 3
 
-    tick.attach(&outputInit, 1s);       //set the ticker to run the output initializer once every second
+    tick1.attach(&outputInit1, 1s);       //set ticker 1 to run the output initializer once every second for thread 1
+    tick2.attach(&outputInit2, 1s);       //set ticker 2 to run the output initializer once every second for thread 2
+    tick3.attach(&outputInit3, 1s);       //set ticker 3 to run the output initializer once every second for thread 3
 
     while(true){}                       //run indefinitely
 
     return 0;
 }
 
-//this ISR function adds the time-costly event to the event queue
-void outputInit(){
-    eq1.call(output);
-}
+//these ISR functions adds the time-costly thread functions to the event queue
+void outputInit1(){eq1.call(output, 1);}
+void outputInit2(){eq2.call(output, 2);}
+void outputInit3(){eq3.call(output, 3);}
 
 //this EventQueue-called function executes lengthier calls
-void output(){
-    printf("heartbeat rise %d\n", ++beat1);
+void output(int beatThread){
+    printer.lock();
+    printf("thread %d rise %d\n", beatThread, ++beat[beatThread]);
+    printer.unlock();
     
     thread_sleep_for(500);
 
-    printf("heartbeat fall %d\n", beat1);
+    printer.lock();
+    printf("thread %d fall %d\n", beatThread, beat[beatThread]);
+    printer.unlock();
 }
 
