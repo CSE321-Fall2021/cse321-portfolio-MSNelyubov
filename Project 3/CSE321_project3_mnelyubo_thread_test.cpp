@@ -3,7 +3,9 @@
 *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
 *   Date Created:   11/22/2021
 *   Last Modified:  11/22/2021
-*   Purpose:        This program tests the operation of EventQueue
+*   Purpose:        This test code verifies the expected behavior of threads, 
+*                     event queues, and mutexes.  These scheduling utilities
+*                     will be used in the main project implementation.
 *
 *   Functions:      N/A
 *
@@ -17,7 +19,7 @@
 *
 *   References:
 *       NUCLEO datasheet:                  https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
-*       MBED OS API: timer                 https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
+*       MBED OS API: Mutex                 https://os.mbed.com/docs/mbed-os/v6.15/apis/mutex.html
 *
 ******************************************************************************/
 
@@ -30,7 +32,7 @@ Thread t3;
 
 Mutex printer;  //create mutex for controlling access to serial output printing
 
-//the amount of times that output has been called
+//the amount of times that each output function has been called
 int beat[3] = {0,0,0};
 
 Ticker tick1;
