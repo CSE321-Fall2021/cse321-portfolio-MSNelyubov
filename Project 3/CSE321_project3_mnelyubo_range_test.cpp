@@ -106,7 +106,6 @@ int main(){
 
         timer.stop();
         timer.reset();
-
     }
     return 0;
 }
@@ -120,7 +119,6 @@ void riseHandler(){
     riseDetected=getTimeSinceStart();
 }
 
-
 int getStableDistance(){
     int sum = 0;
     for(int i = 0; i < stabilizerArrayLen; i++){
@@ -131,7 +129,7 @@ int getStableDistance(){
 
 //Access global object timer to get the time since the process began in microseconds
 //code in this function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
-unsigned long long getTimeSinceStart() {
+ull getTimeSinceStart() {
     using namespace std::chrono;
     return duration_cast<microseconds>(timer.elapsed_time()).count();
 }
