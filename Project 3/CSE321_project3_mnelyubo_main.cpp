@@ -45,6 +45,10 @@
 #define DISTANCE_MAXIMUM 400  /* sensor max range is stated to be 4m */
 
 
+//Shared variables
+int stableDistance = 0;
+Mutex stableDistanceRWMutex;
+
 //Internal variables exclusive to input Data Stream: Distance Sensor 
 Thread distanceSensorThread;
 EventQueue distanceSensorEventQueue(32 * EVENTS_EVENT_SIZE);
@@ -57,10 +61,10 @@ void distanceEchoRiseHandler();
 void distanceEchoFallHandler();
 
 ull getTimeSinceStart();
-int getStableDistance();
+int updateStableDistance();
 
-int stableDistance[stabilizerArrayLen];
-int stableDistIdx = 0;
+int distanceBuffer[stabilizerArrayLen];
+int distanceBuffIdx = 0;
 
 Timer distanceEchoTimer;
 Ticker distanceSensorPollStarter;
@@ -121,15 +125,16 @@ void processDistanceData(){
     ull deltaTime = fallEchoTimestamp - riseEchoTimestamp;
     int distance = deltaTime / 58;
     if(distance < DISTANCE_MAXIMUM){
-        stableDistance[stableDistIdx++ % stabilizerArrayLen]=distance;
+        distanceBuffer[distanceBuffIdx++ % stabilizerArrayLen]=distance;
     }
 
-    printf("Threaded sample measured: %d cm \tStabilized estimate: %d\n", distance, getStableDistance());   //documentation states divide by 58 to provide distance in CM
+    printf("Threaded sample measured: %d cm \tStabilized estimate: %d\n", distance, updateStableDistance());   //documentation states divide by 58 to provide distance in CM
     riseEchoTimestamp=false;
     fallEchoTimestamp=false;
 
     distanceEchoTimer.stop();
     distanceEchoTimer.reset();  //reset the timer for the next run
+
 }
 
 
@@ -142,12 +147,17 @@ void distanceEchoRiseHandler(){
     riseEchoTimestamp=getTimeSinceStart();
 }
 
-int getStableDistance(){
+//locks and writes to the stableDistance shared variable
+int updateStableDistance(){
     int sum = 0;
     for(int i = 0; i < stabilizerArrayLen; i++){
-        sum += stableDistance[i];
+        sum += distanceBuffer[i];
     }
-    return sum / stabilizerArrayLen;
+    int averageDistance = sum / stabilizerArrayLen;
+    stableDistanceRWMutex.lock();
+    stableDistance = averageDistance;
+    stableDistanceRWMutex.unlock();
+    return averageDistance;
 }
 
 //Access global object timer to get the time since the process began in microseconds
