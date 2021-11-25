@@ -30,7 +30,18 @@
 ******************************************************************************/
 
 #include "mbed.h"
+#include "1802.h"
 #include <chrono>
+
+
+//LCD properties
+#define COL 16
+#define ROW 2
+
+//LCD character positions
+#define distancePosition1    11
+#define distancePosition10   10
+#define distancePosition100  9
 
 
 //timing behavior
@@ -44,35 +55,66 @@
 #define stabilizerArrayLen 40
 #define DISTANCE_MAXIMUM 400  /* sensor max range is stated to be 4m */
 
+//system state configuration
+#define Waiting 0x0
+
 
 //Shared variables
-int stableDistance = 0;
-Mutex stableDistanceRWMutex;
+    int currentState = Waiting;
+    Mutex currentStateRW;               //mutex order: 1
 
-//Internal variables exclusive to input Data Stream: Distance Sensor 
-Thread distanceSensorThread;
-EventQueue distanceSensorEventQueue(32 * EVENTS_EVENT_SIZE);
+    int outputChangesMade = false;
+    Mutex outputChangesMadeRW;          //mutex order: 2
 
-void enqueuePoll();
-void pollDistanceSensor();
-void processDistanceData();
+    int stableDistance = 0;
+    Mutex stableDistanceRWMutex;        //mutex order: 3
 
-void distanceEchoRiseHandler();
-void distanceEchoFallHandler();
+    char lcdOutputTextTable[][COL] = {
+        "Distance Measur","ed:      000 cm"     //output configuration for the State:  Waiting
+    };
+    Mutex lcdOutputTableRW;             //mutex order: 4
 
-ull getTimeSinceStart();
-int updateStableDistance();
 
-int distanceBuffer[stabilizerArrayLen];
-int distanceBuffIdx = 0;
+    Mutex printerMutex;                 //mutex order: last
 
-Timer distanceEchoTimer;
-Ticker distanceSensorPollStarter;
+//Internal variables exclusive to output data path: LCD
+    Thread lcdRefreshThread;
+    EventQueue lcdRefreshEventQueue(32 * EVENTS_EVENT_SIZE);
 
-ull riseEchoTimestamp = 0;
-ull fallEchoTimestamp = 0;
+    Ticker lcdRefreshTicker;
 
-InterruptIn echo(PC_8);
+    CSE321_LCD lcdObject(COL,ROW);  //create interface to control the output LCD.  Reused from Project 2
+    void populateLcdOutput();
+    
+    void enqueueLcdRefresh();
+
+
+//Internal variables exclusive to input data path: Distance Sensor 
+    Thread distanceSensorThread;
+    EventQueue distanceSensorEventQueue(32 * EVENTS_EVENT_SIZE);
+
+    void enqueuePoll();
+    void pollDistanceSensor();
+    void processDistanceData();
+
+    void distanceEchoRiseHandler();
+    void distanceEchoFallHandler();
+
+    ull getTimeSinceStart();
+    int updateStableDistance();
+
+    int distanceBuffer[stabilizerArrayLen];
+    int distanceBuffIdx = 0;
+
+    Timer distanceEchoTimer;
+    Ticker distanceSensorPollStarter;
+
+    ull riseEchoTimestamp = 0;
+    ull fallEchoTimestamp = 0;
+
+    InterruptIn echo(PC_8);
+
+
 
 int main(){
 
@@ -96,10 +138,19 @@ int main(){
 
 
     /*************************
+    *Peripheral configuration*
+    *************************/
+    lcdObject.begin();              //initialize LCD, reused from Project 2
+
+
+    /*************************
     *  Thread configuration  *
     *************************/
     distanceSensorThread.start(callback(&distanceSensorEventQueue, &EventQueue::dispatch_forever));
     distanceSensorPollStarter.attach(&enqueuePoll, 100ms);
+
+    lcdRefreshThread.start(callback(&lcdRefreshEventQueue, &EventQueue::dispatch_forever));
+    lcdRefreshTicker.attach(&enqueueLcdRefresh, 100ms);
 
     while(true){
         thread_sleep_for(1000);
@@ -128,7 +179,9 @@ void processDistanceData(){
         distanceBuffer[distanceBuffIdx++ % stabilizerArrayLen]=distance;
     }
 
+    printerMutex.lock();
     printf("Threaded sample measured: %d cm \tStabilized estimate: %d\n", distance, updateStableDistance());   //documentation states divide by 58 to provide distance in CM
+    printerMutex.unlock();
     riseEchoTimestamp=false;
     fallEchoTimestamp=false;
 
@@ -154,9 +207,18 @@ int updateStableDistance(){
         sum += distanceBuffer[i];
     }
     int averageDistance = sum / stabilizerArrayLen;
-    stableDistanceRWMutex.lock();
-    stableDistance = averageDistance;
-    stableDistanceRWMutex.unlock();
+    
+    int acquiredLock = stableDistanceRWMutex.trylock();
+    if(acquiredLock){
+        if(stableDistance != averageDistance){
+            outputChangesMadeRW.lock();
+            outputChangesMade = true;
+            outputChangesMadeRW.unlock();
+
+            stableDistance = averageDistance;
+        }
+        stableDistanceRWMutex.unlock();
+    }
     return averageDistance;
 }
 
@@ -165,4 +227,48 @@ int updateStableDistance(){
 ull getTimeSinceStart() {
     using namespace std::chrono;
     return duration_cast<microseconds>(distanceEchoTimer.elapsed_time()).count();
+}
+
+void enqueueLcdRefresh(){
+    lcdRefreshEventQueue.call(populateLcdOutput);
+}
+
+//reused from Project 2 due to modularity of code and reuse of peripheral
+void populateLcdOutput(){
+    currentStateRW.lock();
+    outputChangesMadeRW.lock();
+    stableDistanceRWMutex.lock();
+    //printerMutex.lock();
+
+    if(!outputChangesMade){
+        // printerMutex.unlock();
+        stableDistanceRWMutex.unlock();
+        outputChangesMadeRW.unlock();
+        currentStateRW.unlock();
+        return;
+    }
+    outputChangesMade = false;
+
+    //update capacity distance in state
+    lcdOutputTextTable[Waiting + 1][distancePosition100] = '0' + (stableDistance/100) % 10;
+    lcdOutputTextTable[Waiting + 1][distancePosition10]  = '0' + (stableDistance/10)  % 10;
+    lcdOutputTextTable[Waiting + 1][distancePosition1]   = '0' + (stableDistance/1)   % 10;
+
+    //refresh each line of the LCD display
+    for(char line = 0; line < ROW; line++){
+        char* printVal = lcdOutputTextTable[currentState + line];   //retrieve the string associated with the current line of the LCD
+        
+        //printf("Refreshing line %d of LCD with text: %s\n", line, printVal);
+        
+
+        lcdObject.setCursor(0, line);                       //reset cursor to position 0 of the line to be written to
+        lcdObject.print(printVal);                          //send a print request to configure the text of the line
+    }
+
+    // printf("Unlocking mutexes\n");
+
+    // printerMutex.unlock();
+    stableDistanceRWMutex.unlock();
+    outputChangesMadeRW.unlock();
+    currentStateRW.unlock();
 }
