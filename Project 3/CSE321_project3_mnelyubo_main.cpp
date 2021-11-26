@@ -49,12 +49,28 @@
 #define Col147 3
 
 //LCD character positions
-#define distancePosition1    13
-#define distancePosition10   12
 #define distancePosition100  11
+#define distancePosition10   12
+#define distancePosition1    13
+
+#define percentPosition100 0
+#define percentPosition10  1
+#define percentPosition1   2
+
+#define timeInputHours01 9
+#define timeInputHours10 8
+#define timeInputMins01 12
+#define timeInputMins10 11
+#define timeInputSecs01 15
+#define timeInputSecs10 14
+
+
 
 //Reused from Project 2: dimension (row and column) of the Matrix keypad
 #define MatrixDim 4
+
+//Reused from Project 2: keypad bounce timeout window (ms)
+#define bounceTimeoutWindow 100
 
 //Distance Sensor data
 #define POLLING_HIGH_TIME     10us
@@ -76,7 +92,7 @@
 #define Observer 0x8
 
 //Shared variables
-    int currentState = SetMax;
+    int currentState = SetRealTime;
     Mutex currentStateRW;               //mutex order: 1
 
     int outputChangesMade = false;
@@ -88,9 +104,9 @@
     char lcdOutputTextTable[][COL + 1] = {        //COL + 1 due to '\0' string suffix
         "Set current time","(24hr)  hh:mm:ss",    //output configuration for the State:  SetRealTime
         "Set closing time","(24hr)  hh:mm:ss",    //output configuration for the State:  SetClosingTime
-        "[A] confirm     ","Set full:  000cm",    //output configuration for the State:  SetMax
-        "[A] confirm     ","Set empty: 000cm",    //output configuration for the State:  SetMin
-        "Time       Space","hh:mm:dd    nnn%"     //output configuration for the State:  SetMax
+        "[A] confirm     ","Set empty: 000cm",    //output configuration for the State:  SetMax
+        "[A] confirm     ","Set full:  000cm",    //output configuration for the State:  SetMin
+        "Space       Time","nnn%    hh:mm:ss"     //output configuration for the State:  Observer
     };
     Mutex lcdOutputTableRW;             //mutex order: 4
 
@@ -105,7 +121,11 @@
     Mutex maxDistanceRW;                //mutex order: 7
 
     int minDistance = DISTANCE_MINIMUM;
-    Mutex minDistanceRw;                //mutex order: 8
+    Mutex minDistanceRW;                //mutex order: 8
+
+    //Reused from Project 2:
+    int bounceLockout = 0;
+    Mutex bounceHandlerMutex;           //mutex order: 9
 
     Mutex printerMutex;                 //mutex order: last
 
@@ -121,6 +141,9 @@
     
     void enqueueLcdRefresh();
 
+    Ticker rtClockHandler;  //increment real-time clock once it is input every second
+    void enqueueRTClockTick();
+    void tickRealTimeClock();
 
 //Internal variables exclusive to input data path: 4x4 matrix keypad
     Thread matrixThread;
@@ -155,6 +178,17 @@
     void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);
     void handleInputKey(char charPressed);
 
+    int timeInputPositions[] = {
+        timeInputHours10,
+        timeInputHours01,
+        timeInputMins10,
+        timeInputMins01,
+        timeInputSecs10,
+        timeInputSecs01
+    };
+    int timeInputIndex = 0;
+
+    void updateTimeData(char charPressed);
 
 //Internal variables exclusive to input data path: Distance Sensor 
     Thread distanceSensorThread;
@@ -232,12 +266,16 @@ int main(){
 
     lcdRefreshThread.start(callback(&lcdRefreshEventQueue, &EventQueue::dispatch_forever));
     lcdRefreshTicker.attach(&enqueueLcdRefresh, 100ms);
+    rtClockHandler.attach(&enqueueRTClockTick, 1s);
 
     matrixThread.start(callback(&matrixOpsEventQueue, &EventQueue::dispatch_forever));
     matrixAlternationTicker.attach(&enqueueMatrixAlternation, 10ms);
 
     while(true){
-        thread_sleep_for(1000);
+        thread_sleep_for(1);
+        bounceHandlerMutex.lock();
+        if(bounceLockout > 0) bounceLockout--;
+        bounceHandlerMutex.unlock();
     }
     return 0;
 }
@@ -296,10 +334,13 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 
     char detectedKey = keyValues[column][row];      //fetch the char value associated with the index that was detected
     if(isRisingEdgeInterrupt){
-        if(!charPressed){   //fail immediately if the mutex is already locked by another process
+        bounceHandlerMutex.lock();
+        if(!charPressed && bounceLockout == 0){   //fail immediately if another key is pressed or was pressed recently
+            bounceLockout = bounceTimeoutWindow;  //ensure no additional events are acted upon
             charPressed = detectedKey;
             handleInputKey(charPressed);
         }
+        bounceHandlerMutex.unlock();
     }else{
         if(charPressed == detectedKey){
             // printerMutex.lock();
@@ -311,6 +352,16 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
     // matrixButtonEventHandlerMutex.unlock();
 }
 
+
+
+
+//due to variable scope, this cannot effectively be a function
+#define updateTimeData  lcdOutputTableRW.lock();                                                              \
+                        lcdOutputTextTable[entryState + 1][timeInputPositions[timeInputIndex]] = charPressed; \
+                        lcdOutputTableRW.unlock();                                                            \
+                        incrementInputIndex=true;
+
+
 //Reused from Project 2
 //non-ISR function
 //todo: fix Mutex ordering
@@ -320,23 +371,193 @@ void handleInputKey(char charPressed){
     // printerMutex.unlock();
     //TODO: handle state-based logic
     currentStateRW.lock();
-    if(currentState == SetRealTime){
-        //TODO
+    int entryState = currentState;      //act based on the system state preceeding the button press
+
+    if(entryState == SetRealTime){
+        switch(charPressed){
+            case 'a':               //switch to next state and filter input of the current state
+                timeInputIndex = 0;
+                currentState = SetClosingTime;
+                for(int i = timeInputHours10; i < timeInputSecs01; i++){
+                    if(lcdOutputTextTable[entryState + 1][i] > ':'){
+                        lcdOutputTextTable[entryState + 1][i] = '0';
+                    }
+                }
+                
+                break;
+            case 'c':               //reset input time
+                timeInputIndex = 0;
+                lcdOutputTextTable[entryState + 1][timeInputHours10] = 'h';
+                lcdOutputTextTable[entryState + 1][timeInputHours01] = 'h';
+                lcdOutputTextTable[entryState + 1][timeInputMins10] = 'm';
+                lcdOutputTextTable[entryState + 1][timeInputMins01] = 'm';
+                lcdOutputTextTable[entryState + 1][timeInputSecs10] = 's';
+                lcdOutputTextTable[entryState + 1][timeInputSecs01] = 's';
+                
+                break;
+
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '0':
+                int incrementInputIndex = false;
+
+                //select the correct time input position to update
+                int timeInputPosition = timeInputPositions[timeInputIndex];
+                if(timeInputPosition == timeInputHours10){
+                    if(charPressed < '3'){  //tens of hours cannot exceed 2
+                        updateTimeData;
+                    }
+                }
+
+               if(timeInputPosition == timeInputHours01){
+                    if(lcdOutputTextTable[entryState + 1][timeInputHours10] < '3' && charPressed < '4'  ||   //hours cannot exceed 23 (23:59:59 is followed by 00:00:00)
+                       lcdOutputTextTable[entryState + 1][timeInputHours10] < '2'                            //hours can reach 19:00:00 and 09:00:00
+                    ){
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputMins10){
+                    if(charPressed < '6'){  //minutes cannot exceed 59
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputMins01){
+                    updateTimeData;         //the entire range of 0-9 is valid for single minutes
+                }
+
+                if(timeInputPosition == timeInputSecs10){
+                    if(charPressed < '6'){  //seconds cannot exceed 59
+                        updateTimeData;
+                    }
+
+                }
+
+                if(timeInputPosition == timeInputSecs01){
+                    updateTimeData;         //the entire range of 0-9 is valid for single seconds
+                }
+
+                if(incrementInputIndex) timeInputIndex++;
+                break;
+
+        }
     }
     
-    if(currentState == SetClosingTime){
-        //TODO
+    if(entryState == SetClosingTime){
+        switch(charPressed){
+            case 'a':               //switch to next state and filter input of the current state
+                timeInputIndex = 0;
+                currentState = SetMax;
+
+                //iterate over the time input and replace any remaining 'h','m', and 's' characters with '0'
+                for(int i = timeInputHours10; i < timeInputSecs01; i++){
+                    if(lcdOutputTextTable[entryState + 1][i] > ':'){
+                        lcdOutputTextTable[entryState + 1][i] = '0';
+                    }
+                }
+                
+                break;
+            case 'c':               //reset input time
+                timeInputIndex = 0;
+                lcdOutputTextTable[entryState + 1][timeInputHours10] = 'h';
+                lcdOutputTextTable[entryState + 1][timeInputHours01] = 'h';
+                lcdOutputTextTable[entryState + 1][timeInputMins10] = 'm';
+                lcdOutputTextTable[entryState + 1][timeInputMins01] = 'm';
+                lcdOutputTextTable[entryState + 1][timeInputSecs10] = 's';
+                lcdOutputTextTable[entryState + 1][timeInputSecs01] = 's';
+                
+                break;
+
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '0':
+                int incrementInputIndex = false;
+
+                //select the correct time input position to update
+                int timeInputPosition = timeInputPositions[timeInputIndex];
+                if(timeInputPosition == timeInputHours10){
+                    if(charPressed < '3'){  //tens of hours cannot exceed 2
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputHours01){
+                    if(lcdOutputTextTable[entryState + 1][timeInputHours10] < '3' && charPressed < '4'  ||   //hours cannot exceed 23 (23:59:59 is followed by 00:00:00)
+                       lcdOutputTextTable[entryState + 1][timeInputHours10] < '2'                            //hours can reach 19:00:00 and 09:00:00
+                    ){   
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputMins10){
+                    if(charPressed < '6'){  //minutes cannot exceed 59
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputMins01){
+                    updateTimeData;         //the entire range of 0-9 is valid for single minutes
+                }
+
+                if(timeInputPosition == timeInputSecs10){
+                    if(charPressed < '6'){  //seconds cannot exceed 59
+                        updateTimeData;
+                    }
+
+                }
+
+                if(timeInputPosition == timeInputSecs01){
+                    updateTimeData;         //the entire range of 0-9 is valid for single seconds
+                }
+
+                if(incrementInputIndex) timeInputIndex++;
+                break;
+
+        }
     }
     
-    if(currentState == SetMax){
-        //TODO
+    if(entryState == SetMax){
+        switch(charPressed){
+            case 'a':
+                stableDistanceRWMutex.lock();
+                maxDistanceRW.lock();
+                maxDistance = stableDistance;
+                maxDistanceRW.unlock();
+                stableDistanceRWMutex.unlock();
+                currentState = SetMin;
+                break;
+        }
     }
 
-    if(currentState == SetMin){
-        //TODO
+    if(entryState == SetMin){
+        switch(charPressed){
+            case 'a':
+                stableDistanceRWMutex.lock();
+                minDistanceRW.lock();
+                minDistance = stableDistance;
+                minDistanceRW.unlock();
+                stableDistanceRWMutex.unlock();
+                currentState = Observer;
+                break;
+        }
     }
 
-    if(currentState == Observer){
+    if(entryState == Observer){
         //TODO
     }
 
@@ -417,6 +638,56 @@ ull getTimeSinceStart() {
     return duration_cast<microseconds>(distanceEchoTimer.elapsed_time()).count();
 }
 
+void enqueueRTClockTick(){
+    lcdRefreshEventQueue.call(tickRealTimeClock);
+}
+
+void tickRealTimeClock(){
+    currentStateRW.lock();
+    outputChangesMadeRW.lock();
+    lcdOutputTableRW.lock();
+    outputChangesMade = true;
+
+    if(currentState != SetRealTime){    //only update the clock when not setting the clock
+        if(lcdOutputTextTable[SetRealTime + 1][timeInputSecs01]++ >= '9'){      //increment seconds up to the limit of 9
+            lcdOutputTextTable[SetRealTime + 1][timeInputSecs01] = '0';
+
+            if(lcdOutputTextTable[SetRealTime + 1][timeInputSecs10]++ >= '5'){  //only occurs when seconds were previously :59
+                lcdOutputTextTable[SetRealTime + 1][timeInputSecs10] = '0';
+                //handle minutes
+                if(lcdOutputTextTable[SetRealTime + 1][timeInputMins01]++ >= '9'){  //increment minutes up to the limit of 9
+                    lcdOutputTextTable[SetRealTime + 1][timeInputMins01] = '0';
+
+                    if(lcdOutputTextTable[SetRealTime + 1][timeInputMins10]++ >= '5'){  //only occurs when minutes were previously :59
+                        lcdOutputTextTable[SetRealTime + 1][timeInputMins10] = '0';
+
+                        //TODO: handle hours
+                        if(lcdOutputTextTable[SetRealTime + 1][timeInputHours01]++ == '9'){
+                            lcdOutputTextTable[SetRealTime + 1][timeInputHours01]='0';
+                            lcdOutputTextTable[SetRealTime + 1][timeInputHours10]++;
+
+                            //handle day rollover
+                            if(lcdOutputTextTable[SetRealTime + 1][timeInputHours01] == '4' && lcdOutputTextTable[SetRealTime + 1][timeInputHours01] == '2'){
+                               lcdOutputTextTable[SetRealTime + 1][timeInputHours01] = '0';
+                               lcdOutputTextTable[SetRealTime + 1][timeInputHours10] = '0'; 
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //put new value of SetRealTime
+    for(int i = timeInputHours10; i <= timeInputSecs01; i++){
+        lcdOutputTextTable[Observer + 1][i] = lcdOutputTextTable[SetRealTime + 1][i];
+    }
+
+    lcdOutputTableRW.unlock();
+    outputChangesMadeRW.unlock();
+    currentStateRW.unlock();
+}
+
 void enqueueLcdRefresh(){
     lcdRefreshEventQueue.call(populateLcdOutput);
 }
@@ -426,10 +697,14 @@ void populateLcdOutput(){
     currentStateRW.lock();
     outputChangesMadeRW.lock();
     stableDistanceRWMutex.lock();
+    maxDistanceRW.lock();
+    minDistanceRW.lock();
     //printerMutex.lock();
 
     if(!outputChangesMade){
         // printerMutex.unlock();
+        minDistanceRW.unlock();
+        maxDistanceRW.unlock();
         stableDistanceRWMutex.unlock();
         outputChangesMadeRW.unlock();
         currentStateRW.unlock();
@@ -437,11 +712,28 @@ void populateLcdOutput(){
     }
     outputChangesMade = false;
 
-    //update capacity distance in state
-    lcdOutputTextTable[SetMax + 1][distancePosition100] = '0' + (stableDistance/100) % 10;
-    lcdOutputTextTable[SetMax + 1][distancePosition10]  = '0' + (stableDistance/10)  % 10;
-    lcdOutputTextTable[SetMax + 1][distancePosition1]   = '0' + (stableDistance/1)   % 10;
+    //update capacity distance in min/max states
+    if(currentState == SetMax || currentState == SetMin){
+        lcdOutputTextTable[currentState + 1][distancePosition100] = '0' + (stableDistance/100) % 10;
+        lcdOutputTextTable[currentState + 1][distancePosition10]  = '0' + (stableDistance/10)  % 10;
+        lcdOutputTextTable[currentState + 1][distancePosition1]   = '0' + (stableDistance/1)   % 10;
+    }
 
+
+    if(maxDistance != minDistance){
+        int spaceValue = 100 * (maxDistance - stableDistance);
+        spaceValue = spaceValue / (maxDistance - minDistance);
+
+        if(spaceValue < 0) spaceValue = 0;  //set a hard limit of 0% full in case the container moves
+
+        lcdOutputTextTable[Observer + 1][percentPosition100] = '0' + (spaceValue/100) % 10;
+        lcdOutputTextTable[Observer + 1][percentPosition10]  = '0' + (spaceValue/10)  % 10;
+        lcdOutputTextTable[Observer + 1][percentPosition1]   = '0' + (spaceValue/1)   % 10;
+    }else{
+        lcdOutputTextTable[Observer + 1][percentPosition100] = 'N';
+        lcdOutputTextTable[Observer + 1][percentPosition10]  = '/';
+        lcdOutputTextTable[Observer + 1][percentPosition1]   = '0';
+    }
     //refresh each line of the LCD display
     for(char line = 0; line < ROW; line++){
         char* printVal = lcdOutputTextTable[currentState + line];   //retrieve the string associated with the current line of the LCD
@@ -456,6 +748,8 @@ void populateLcdOutput(){
     // printf("Unlocking mutexes\n");
 
     // printerMutex.unlock();
+    minDistanceRW.unlock();
+    maxDistanceRW.unlock();
     stableDistanceRWMutex.unlock();
     outputChangesMadeRW.unlock();
     currentStateRW.unlock();
