@@ -64,6 +64,9 @@
 #define timeInputSecs01 15
 #define timeInputSecs10 14
 
+#define alarmIndicatorPosition 7
+#define alarmIndicatorArmed '#'
+#define alarmIndicatorOff ' '
 
 
 //Reused from Project 2: dimension (row and column) of the Matrix keypad
@@ -85,11 +88,11 @@
 #define stabilizerArrayLen 4
 
 //system state configuration
-#define SetRealTime 0x0
+#define SetRealTime    0x0
 #define SetClosingTime 0x2
-#define SetMax 0x4
-#define SetMin 0x6
-#define Observer 0x8
+#define SetMax         0x4
+#define SetMin         0x6
+#define Observer       0x8
 
 //Shared variables
     int currentState = SetRealTime;
@@ -110,7 +113,7 @@
     };
     Mutex lcdOutputTableRW;             //mutex order: 4
 
-    Mutex matrixButtonEventHandlerMutex;//mutex order: 5
+    //Mutex matrixButtonEventHandlerMutex;//mutex order: 5
 
     //Reused from Project 2
     char charPressed = '\0';
@@ -127,6 +130,9 @@
     int bounceLockout = 0;
     Mutex bounceHandlerMutex;           //mutex order: 9
 
+    int alarmArmed = false;             //indicates if the alarm should sound when the container is not empty after closing time
+    Mutex alarmArmedRW;                 //mutex order: 10
+
     Mutex printerMutex;                 //mutex order: last
 
 
@@ -138,12 +144,16 @@
 
     CSE321_LCD lcdObject(COL,ROW);  //create interface to control the output LCD.  Reused from Project 2
     void populateLcdOutput();
+    bool closingTimeCrossed();
     
     void enqueueLcdRefresh();
 
     Ticker rtClockHandler;  //increment real-time clock once it is input every second
     void enqueueRTClockTick();
     void tickRealTimeClock();
+
+    DigitalOut alarm_Vcc(PB_10);    //starts off with 0V, power to alarm disabled
+    DigitalOut alarm_L(PB_11);      //starts off with 0V (problematic as an active low component)
 
 //Internal variables exclusive to input data path: 4x4 matrix keypad
     Thread matrixThread;
@@ -251,6 +261,8 @@ int main(){
     GPIOE->MODER |= 0x01510;       
     GPIOE->MODER &= ~(0x02A20);
 
+    alarm_L.write(1);       //Disable active low alarm
+    alarm_Vcc.write(1);     //Enable power to alarm
 
     /*************************
     *Peripheral configuration*
@@ -330,8 +342,6 @@ void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, Fal
 
 //Reused from Project 2
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
-    // matrixButtonEventHandlerMutex.lock();
-
     char detectedKey = keyValues[column][row];      //fetch the char value associated with the index that was detected
     if(isRisingEdgeInterrupt){
         bounceHandlerMutex.lock();
@@ -343,13 +353,9 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
         bounceHandlerMutex.unlock();
     }else{
         if(charPressed == detectedKey){
-            // printerMutex.lock();
-            // printf("Key released: %c\n", charPressed);
-            // printerMutex.unlock();
             charPressed = '\0';                 //reset the char value to '\0' to indicate that no key is pressed
         }
     }
-    // matrixButtonEventHandlerMutex.unlock();
 }
 
 
@@ -365,6 +371,7 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 //Reused from Project 2
 //non-ISR function
 //todo: fix Mutex ordering
+//todo: switch D: reconfigure
 void handleInputKey(char charPressed){
     // printerMutex.lock();
     // printf("Key pressed: %c\n", charPressed);
@@ -549,16 +556,38 @@ void handleInputKey(char charPressed){
             case 'a':
                 stableDistanceRWMutex.lock();
                 minDistanceRW.lock();
+                alarmArmedRW.lock();
+                
                 minDistance = stableDistance;
+                alarmArmed = true;
+                currentState = Observer;
+
+                alarmArmedRW.unlock();
                 minDistanceRW.unlock();
                 stableDistanceRWMutex.unlock();
-                currentState = Observer;
                 break;
         }
     }
 
     if(entryState == Observer){
         //TODO
+    }
+
+    //Comamnds Independent of State:
+    switch(charPressed){
+        case 'd':       //return to setup, deactivate the alarm until setup completes
+            currentState = SetRealTime;     //return to state SetRealTime
+            timeInputIndex = 0;             //reset edit cursor to 10's of hours, but do not clear stored data
+            alarmArmedRW.lock();
+            alarmArmed = false;
+            alarmArmedRW.unlock();
+            break;
+        case '#':       //toggle state of alarm being armed
+            alarmArmedRW.lock();
+            alarmArmed = !alarmArmed;
+            alarmArmedRW.unlock();
+            break;
+        
     }
 
     outputChangesMadeRW.lock();
@@ -720,8 +749,10 @@ void populateLcdOutput(){
     }
 
 
+    int spaceValue;
+    //update the value of the percent of space used in the Observer State
     if(maxDistance != minDistance){
-        int spaceValue = 100 * (maxDistance - stableDistance);
+        spaceValue = 100 * (maxDistance - stableDistance);
         spaceValue = spaceValue / (maxDistance - minDistance);
 
         if(spaceValue < 0) spaceValue = 0;  //set a hard limit of 0% full in case the container moves
@@ -734,13 +765,31 @@ void populateLcdOutput(){
         lcdOutputTextTable[Observer + 1][percentPosition10]  = '/';
         lcdOutputTextTable[Observer + 1][percentPosition1]   = '0';
     }
+
+    //update the state of the alarm
+    bool activateAlarm = false;
+    alarmArmedRW.lock();
+    if(alarmArmed){
+        lcdOutputTextTable[Observer + 1][alarmIndicatorPosition] = alarmIndicatorArmed;
+        if(closingTimeCrossed() && spaceValue > 0){
+            activateAlarm = true;
+        }
+    }else{
+        lcdOutputTextTable[Observer + 1][alarmIndicatorPosition] = alarmIndicatorOff;
+    }
+    alarmArmedRW.unlock();
+
+    if(activateAlarm){
+        //send signal low to active low alarm pin (PB_11)
+        alarm_L.write(0);
+    }else{
+        //send signal high to active low alarm pin (PB_11)
+        alarm_L.write(1);
+    }
+
     //refresh each line of the LCD display
     for(char line = 0; line < ROW; line++){
         char* printVal = lcdOutputTextTable[currentState + line];   //retrieve the string associated with the current line of the LCD
-        
-        //printf("Refreshing line %d of LCD with text: %s\n", line, printVal);
-        
-
         lcdObject.setCursor(0, line);                       //reset cursor to position 0 of the line to be written to
         lcdObject.print(printVal);                          //send a print request to configure the text of the line
     }
@@ -753,4 +802,19 @@ void populateLcdOutput(){
     stableDistanceRWMutex.unlock();
     outputChangesMadeRW.unlock();
     currentStateRW.unlock();
+}
+
+
+//returns true if the current time is greater than closing time.  Assumes that the calling thread has locked the lcdOutputTextTable mutex
+bool closingTimeCrossed(){
+
+    for(int i = timeInputHours10; i<=timeInputSecs01; i++){
+        //compare for a greater quantity of unit time
+        if(lcdOutputTextTable[SetRealTime + 1][i] > lcdOutputTextTable[SetClosingTime + 1][i]) return true;       //current unit time is greater than closing unit time
+        if(lcdOutputTextTable[SetRealTime + 1][i] < lcdOutputTextTable[SetClosingTime + 1][i]) return false;      //current unit time is less than closing unit time
+        //all remaining possibilities must have this unit of time equal and can thus be ignored
+    }
+
+    //times are exactly equal if the for loop has been escaped.  Return false since it has not yet been *crossed*
+    return false;
 }
