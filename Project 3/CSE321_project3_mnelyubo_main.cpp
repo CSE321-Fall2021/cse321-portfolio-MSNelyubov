@@ -53,10 +53,12 @@
 #define distancePosition10   12
 #define distancePosition1    13
 
+//string indexes of the Observer mode for informing a user of the currently used capacity of the container
 #define percentPosition100 0
 #define percentPosition10  1
 #define percentPosition1   2
 
+//string indexes of the SetRealTIme, SetClosingTime, and Observer modes indicating where the time string is stored
 #define timeInputHours01 9
 #define timeInputHours10 8
 #define timeInputMins01 12
@@ -95,15 +97,16 @@
 #define Observer       0x8
 
 //Shared variables
-    int currentState = SetRealTime;
+    int currentState = SetRealTime;     //the current state of the system
     Mutex currentStateRW;               //mutex order: 1
 
-    int outputChangesMade = false;
+    int outputChangesMade = false;      //indicates if there have been any changes made that would require a change to the output display
     Mutex outputChangesMadeRW;          //mutex order: 2
 
-    int stableDistance = 0;
+    int stableDistance = 0;             //the stabilized distance from an average of multiple polls by the distance sensor
     Mutex stableDistanceRWMutex;        //mutex order: 3
 
+    //a table of output values to display on the LCD matrix during any given state
     char lcdOutputTextTable[][COL + 1] = {        //COL + 1 due to '\0' string suffix
         "Set current time","(24hr)  hh:mm:ss",    //output configuration for the State:  SetRealTime
         "Set closing time","(24hr)  hh:mm:ss",    //output configuration for the State:  SetClosingTime
@@ -113,21 +116,23 @@
     };
     Mutex lcdOutputTableRW;             //mutex order: 4
 
-    //Mutex matrixButtonEventHandlerMutex;//mutex order: 5
-
     //Reused from Project 2
-    char charPressed = '\0';
-    int keypadVccRow = 0;
+    char charPressed = '\0';            //the character on the matrix that is currently pressed
+    int keypadVccRow = 0;               //the output into the keypad that is currently being supplied a voltage
     Mutex keypadButtonPressMutex;       //mutex order: 6
 
-    int maxDistance = DISTANCE_MAXIMUM;
+    int maxDistance = DISTANCE_MAXIMUM; //The maximum distance detected by the distance sensor.  
+                                        //Once configured, the stable distance value equaling this value indicates that the container is currently emptied.
+                                        //defaults to maximum distance that can be detected by the distance sensor, 4m.
     Mutex maxDistanceRW;                //mutex order: 7
 
-    int minDistance = DISTANCE_MINIMUM;
+    int minDistance = DISTANCE_MINIMUM; //the minimum distance detected by the distance sensor.
+                                        //Once configured, the stable distance value equaling this value indicates that the container is full.
+                                        //defaults to minimum distance that can be detected by the distance sensor, 2cm.
     Mutex minDistanceRW;                //mutex order: 8
 
     //Reused from Project 2:
-    int bounceLockout = 0;
+    int bounceLockout = 0;              //set to a value greater than zero whenever a button press is detected in order to lock out duplicate button presses for a brief period
     Mutex bounceHandlerMutex;           //mutex order: 9
 
     int alarmArmed = false;             //indicates if the alarm should sound when the container is not empty after closing time
@@ -137,34 +142,34 @@
 
 
 //Internal variables exclusive to output data path: LCD
-    Thread lcdRefreshThread;
-    EventQueue lcdRefreshEventQueue(32 * EVENTS_EVENT_SIZE);
+    Thread lcdRefreshThread;                                    //thread to execute output modification functions that cannot be handled in an ISR context
+    EventQueue lcdRefreshEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the lcdRefreshThread
 
-    Ticker lcdRefreshTicker;
+    Ticker lcdRefreshTicker;                                    //periodically enqueues an event into the lcdRefresh queue to update the contents of the LCD output
 
-    CSE321_LCD lcdObject(COL,ROW);  //create interface to control the output LCD.  Reused from Project 2
-    void populateLcdOutput();
-    bool closingTimeCrossed();
+    CSE321_LCD lcdObject(COL,ROW);                              //create interface to control the output LCD.  Reused from Project 2
+    void populateLcdOutput();                                   //non-ISR function that will update the contents of the LCD output and toggle the state of the buzzer as appropriate
+    bool closingTimeCrossed();                                  //checks if the current time is later than the closing time.  returns true if this is the case
     
-    void enqueueLcdRefresh();
+    void enqueueLcdRefresh();                                   //helper function to enqueue a refresh of the LCD for the lcdRefreshThread to execute
 
-    Ticker rtClockHandler;  //increment real-time clock once it is input every second
-    void enqueueRTClockTick();
-    void tickRealTimeClock();
+    Ticker rtClockHandler;                                      //ticker that will periodically enqueue an event increment real-time clock once it is input every second
+    void enqueueRTClockTick();                                  //helper event that enqueues an incrementation of the real-time clock
+    void tickRealTimeClock();                                   //non-ISR function that will increment the real-time clock and handle numeric roll-over
 
-    DigitalOut alarm_Vcc(PB_10);    //starts off with 0V, power to alarm disabled
-    DigitalOut alarm_L(PB_11);      //starts off with 0V (problematic as an active low component)
+    DigitalOut alarm_Vcc(PB_10);    //starts off with 0V. power to alarm disabled until the alarm state has been set to inactive
+    DigitalOut alarm_L(PB_11);      //starts off with 0V. active low component that produces a noise when active
 
 //Internal variables exclusive to input data path: 4x4 matrix keypad
-    Thread matrixThread;
-    EventQueue matrixOpsEventQueue(32 * EVENTS_EVENT_SIZE);
-    Ticker matrixAlternationTicker;
+    Thread matrixThread;                                    //thread to execute handler functions triggered by user interaction with the matrix keypad
+    EventQueue matrixOpsEventQueue(32 * EVENTS_EVENT_SIZE); //queue of events for the matrix thread to execute
+    Ticker matrixAlternationTicker;                         //ticker that will create periodic matrix events to alternate the channel being polled
 
-    void enqueueMatrixAlternation();
-    void alternateMatrixInput();
+    void enqueueMatrixAlternation();                        //helper function to enqueue alternator function alternateMatrixInput
+    void alternateMatrixInput();                            //alternates matrix poll channel when no button is pressed
 
     //Reused from Project 2
-    char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};
+    char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};       //a 2D character array mapping keypad row/column indexes to their representative characters
 
     //Reused from Project 2
     InterruptIn colLL(PC_0,PullDown);    //declare the connection to pin PC_0 as a source of input interrupts, connected to the far left column of the matrix keypad
@@ -185,10 +190,10 @@
     void falling_isr_147();
 
     //Reused from Project 2: 
-    void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);
-    void handleInputKey(char charPressed);
+    void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);   //filter duplicates and parse matrix button events into input key events
+    void handleInputKey(char charPressed);                                          //handle input keys based on the current state of the system
 
-    int timeInputPositions[] = {
+    int timeInputPositions[] = {    //an array of the defined time value positions for use by iteration during user input 
         timeInputHours10,
         timeInputHours01,
         timeInputMins10,
@@ -196,9 +201,7 @@
         timeInputSecs10,
         timeInputSecs01
     };
-    int timeInputIndex = 0;
-
-    void updateTimeData(char charPressed);
+    int timeInputIndex = 0;         //the current index through the timeInputPositions array.  Accessed solely by the function handleInputKey
 
 //Internal variables exclusive to input data path: Distance Sensor 
     Thread distanceSensorThread;
@@ -226,6 +229,7 @@
     InterruptIn echo(PC_8);
 
 
+//beginning of main execution
 
 int main(){
     printf("\n\n=== System Startup ===\n");
@@ -293,9 +297,7 @@ int main(){
 }
 
 
-void enqueueMatrixAlternation(){
-    matrixOpsEventQueue.call(alternateMatrixInput);
-}
+void enqueueMatrixAlternation(){matrixOpsEventQueue.call(alternateMatrixInput);}
 
 //Reused from Project 2
 void alternateMatrixInput(){
@@ -341,6 +343,7 @@ void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, Fal
 
 
 //Reused from Project 2
+//non-ISR function
 void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
     char detectedKey = keyValues[column][row];      //fetch the char value associated with the index that was detected
     if(isRisingEdgeInterrupt){
@@ -359,9 +362,8 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 }
 
 
-
-
-//due to variable scope, this cannot effectively be a function
+//MACRO to update an input number that will work as a timestamp.
+//Due to the variable scope of incrementInputIndex, this cannot effectively be a function.
 #define updateTimeData  lcdOutputTableRW.lock();                                                              \
                         lcdOutputTextTable[entryState + 1][timeInputPositions[timeInputIndex]] = charPressed; \
                         lcdOutputTableRW.unlock();                                                            \
@@ -372,6 +374,7 @@ void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
 //non-ISR function
 //todo: fix Mutex ordering
 //todo: switch D: reconfigure
+//todo: add Watchdog for when a button press is held for longer than 60 seconds
 void handleInputKey(char charPressed){
     // printerMutex.lock();
     // printf("Key pressed: %c\n", charPressed);
@@ -385,7 +388,7 @@ void handleInputKey(char charPressed){
             case 'a':               //switch to next state and filter input of the current state
                 timeInputIndex = 0;
                 currentState = SetClosingTime;
-                for(int i = timeInputHours10; i < timeInputSecs01; i++){
+                for(int i = timeInputHours10; i <= timeInputSecs01; i++){
                     if(lcdOutputTextTable[entryState + 1][i] > ':'){
                         lcdOutputTextTable[entryState + 1][i] = '0';
                     }
@@ -465,7 +468,7 @@ void handleInputKey(char charPressed){
                 currentState = SetMax;
 
                 //iterate over the time input and replace any remaining 'h','m', and 's' characters with '0'
-                for(int i = timeInputHours10; i < timeInputSecs01; i++){
+                for(int i = timeInputHours10; i <= timeInputSecs01; i++){
                     if(lcdOutputTextTable[entryState + 1][i] > ':'){
                         lcdOutputTextTable[entryState + 1][i] = '0';
                     }
@@ -597,10 +600,9 @@ void handleInputKey(char charPressed){
     currentStateRW.unlock();
 }
 
-void enqueuePoll(){
-    distanceSensorEventQueue.call(pollDistanceSensor);
-}
 
+void enqueuePoll(){distanceSensorEventQueue.call(pollDistanceSensor);}
+//non-ISR function
 void pollDistanceSensor(){
     distanceEchoTimer.start();  //start the timer to measure response time
 
@@ -628,12 +630,13 @@ void processDistanceData(){
 
 }
 
-
+//ISR function to immediately handle falling edge of distance scan
 void distanceEchoFallHandler(){
     fallEchoTimestamp=getTimeSinceStart();
     distanceSensorEventQueue.call(processDistanceData);
 }
 
+//ISR function to immediately handle rising edge of distance scan
 void distanceEchoRiseHandler(){
     riseEchoTimestamp=getTimeSinceStart();
 }
@@ -667,10 +670,9 @@ ull getTimeSinceStart() {
     return duration_cast<microseconds>(distanceEchoTimer.elapsed_time()).count();
 }
 
-void enqueueRTClockTick(){
-    lcdRefreshEventQueue.call(tickRealTimeClock);
-}
 
+//ISR function called by ticker to enqueue main function: tickRealTimeClock
+void enqueueRTClockTick(){lcdRefreshEventQueue.call(tickRealTimeClock);}
 void tickRealTimeClock(){
     currentStateRW.lock();
     outputChangesMadeRW.lock();
@@ -690,12 +692,12 @@ void tickRealTimeClock(){
                     if(lcdOutputTextTable[SetRealTime + 1][timeInputMins10]++ >= '5'){  //only occurs when minutes were previously :59
                         lcdOutputTextTable[SetRealTime + 1][timeInputMins10] = '0';
 
-                        //TODO: handle hours
-                        if(lcdOutputTextTable[SetRealTime + 1][timeInputHours01]++ == '9'){
+                        //handle hours
+                        if(lcdOutputTextTable[SetRealTime + 1][timeInputHours01]++ >= '9'){ //increment hours up to the generic limit of 9
                             lcdOutputTextTable[SetRealTime + 1][timeInputHours01]='0';
                             lcdOutputTextTable[SetRealTime + 1][timeInputHours10]++;
 
-                            //handle day rollover
+                            //handle day rollover when hours = "24" by reseting to "00"
                             if(lcdOutputTextTable[SetRealTime + 1][timeInputHours01] == '4' && lcdOutputTextTable[SetRealTime + 1][timeInputHours01] == '2'){
                                lcdOutputTextTable[SetRealTime + 1][timeInputHours01] = '0';
                                lcdOutputTextTable[SetRealTime + 1][timeInputHours10] = '0'; 
@@ -717,10 +719,7 @@ void tickRealTimeClock(){
     currentStateRW.unlock();
 }
 
-void enqueueLcdRefresh(){
-    lcdRefreshEventQueue.call(populateLcdOutput);
-}
-
+void enqueueLcdRefresh(){lcdRefreshEventQueue.call(populateLcdOutput);}
 //reused from Project 2 due to modularity of code and reuse of peripheral
 void populateLcdOutput(){
     currentStateRW.lock();
