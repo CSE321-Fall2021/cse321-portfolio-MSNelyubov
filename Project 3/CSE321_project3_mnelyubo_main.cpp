@@ -473,6 +473,9 @@ void handleInputKey(char charPressed){
             case '0':
                 bool incrementInputIndex = false;    //indicate if a valid button press was detected and the next time index should be switched to
                 int timeInputPosition = timeInputPositions[timeInputIndex]; //the current index of the time input position to update
+
+                //repeat for each time input position.  This cannot be a single for loop due to the variance of rollover conditions for each digit
+                //if the current time input position matches the time input position of this time unit, make sure that the
                 // input number does not break the conditions required for the time to remain valid on a 24 hour clock
 
                 if(timeInputPosition == timeInputHours10){
