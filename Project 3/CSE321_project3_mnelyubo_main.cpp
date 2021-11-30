@@ -39,8 +39,8 @@
 #define ROW 2
 
 //Reused from Project 2: Matrix event aliases
-#define RisingEdgeInterrupt 1
-#define FallingEdgeInterrupt 0
+#define RisingEdgeInterrupt true
+#define FallingEdgeInterrupt false
 
 //Reused from Project 2: Associated column values with their respective character key value index in the matrix
 #define ColABC 0
@@ -97,14 +97,18 @@
 #define Observer       0x8
 
 //Shared variables
+    //Reused from Project 2:
+    int bounceLockout = 0;              //set to a value greater than zero whenever a button press is detected in order to lock out duplicate button presses for a brief period
+    Mutex bounceHandlerMutex;           //mutex order: (0)
+
     int currentState = SetRealTime;     //the current state of the system
-    Mutex currentStateRW;               //mutex order: 1
+    Mutex currentStateRW;               //mutex order: (1)
 
     int outputChangesMade = false;      //indicates if there have been any changes made that would require a change to the output display
-    Mutex outputChangesMadeRW;          //mutex order: 2
+    Mutex outputChangesMadeRW;          //mutex order: (2)
 
     int stableDistance = 0;             //the stabilized distance from an average of multiple polls by the distance sensor
-    Mutex stableDistanceRWMutex;        //mutex order: 3
+    Mutex stableDistanceRWMutex;        //mutex order: (3)
 
     //a table of output values to display on the LCD matrix during any given state
     char lcdOutputTextTable[][COL + 1] = {        //COL + 1 due to '\0' string suffix
@@ -114,44 +118,37 @@
         "[A] confirm     ","Set full:  000cm",    //output configuration for the State:  SetMin
         "Space       Time","nnn%    hh:mm:ss"     //output configuration for the State:  Observer
     };
-    Mutex lcdOutputTableRW;             //mutex order: 4
+    Mutex lcdOutputTableRW;             //mutex order: (4)
 
-    //Reused from Project 2
-    char charPressed = '\0';            //the character on the matrix that is currently pressed
-    int keypadVccRow = 0;               //the output into the keypad that is currently being supplied a voltage
-    Mutex keypadButtonPressMutex;       //mutex order: 6
-
+    //todo: mark mutex order in code for the below:
     int maxDistance = DISTANCE_MAXIMUM; //The maximum distance detected by the distance sensor.  
                                         //Once configured, the stable distance value equaling this value indicates that the container is currently emptied.
                                         //defaults to maximum distance that can be detected by the distance sensor, 4m.
-    Mutex maxDistanceRW;                //mutex order: 7
+    Mutex maxDistanceRW;                //mutex order: (5)
 
     int minDistance = DISTANCE_MINIMUM; //the minimum distance detected by the distance sensor.
                                         //Once configured, the stable distance value equaling this value indicates that the container is full.
                                         //defaults to minimum distance that can be detected by the distance sensor, 2cm.
-    Mutex minDistanceRW;                //mutex order: 8
+    Mutex minDistanceRW;                //mutex order: (6)
 
-    //Reused from Project 2:
-    int bounceLockout = 0;              //set to a value greater than zero whenever a button press is detected in order to lock out duplicate button presses for a brief period
-    Mutex bounceHandlerMutex;           //mutex order: 9
 
     int alarmArmed = false;             //indicates if the alarm should sound when the container is not empty after closing time
-    Mutex alarmArmedRW;                 //mutex order: 10
+    Mutex alarmArmedRW;                 //mutex order: (7)
 
     Mutex printerMutex;                 //mutex order: last
 
 
 //Internal variables exclusive to output data path: LCD
-    Thread lcdRefreshThread;                                    //thread to execute output modification functions that cannot be handled in an ISR context
-    EventQueue lcdRefreshEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the lcdRefreshThread
+    Thread outputRefreshThread;                                    //thread to execute output modification functions that cannot be handled in an ISR context
+    EventQueue outputModificationEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the lcdRefreshThread
 
-    Ticker lcdRefreshTicker;                                    //periodically enqueues an event into the lcdRefresh queue to update the contents of the LCD output
+    Ticker outputRefreshTicker;                                    //periodically enqueues an event into the lcdRefresh queue to update the contents of the LCD output
 
     CSE321_LCD lcdObject(COL,ROW);                              //create interface to control the output LCD.  Reused from Project 2
     void populateLcdOutput();                                   //non-ISR function that will update the contents of the LCD output and toggle the state of the buzzer as appropriate
     bool closingTimeCrossed();                                  //checks if the current time is later than the closing time.  returns true if this is the case
     
-    void enqueueLcdRefresh();                                   //helper function to enqueue a refresh of the LCD for the lcdRefreshThread to execute
+    void enqueueOutputRefresh();                                   //helper function to enqueue a refresh of the LCD for the lcdRefreshThread to execute
 
     Ticker rtClockHandler;                                      //ticker that will periodically enqueue an event increment real-time clock once it is input every second
     void enqueueRTClockTick();                                  //helper event that enqueues an incrementation of the real-time clock
@@ -169,6 +166,8 @@
     void alternateMatrixInput();                            //alternates matrix poll channel when no button is pressed
 
     //Reused from Project 2
+    char charPressed = '\0';            //the character on the matrix that is currently pressed
+    int keypadVccRow = 0;               //the output into the keypad that is currently being supplied a voltage
     char keyValues[][MatrixDim + 1] = {"dcba","#963","0852","*741"};       //a 2D character array mapping keypad row/column indexes to their representative characters
 
     //Reused from Project 2
@@ -190,7 +189,7 @@
     void falling_isr_147();
 
     //Reused from Project 2: 
-    void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row);   //filter duplicates and parse matrix button events into input key events
+    void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row);   //filter duplicates and parse matrix button events into input key events
     void handleInputKey(char charPressed);                                          //handle input keys based on the current state of the system
 
     int timeInputPositions[] = {    //an array of the defined time value positions for use by iteration during user input 
@@ -230,7 +229,6 @@
 
 
 //beginning of main execution
-
 int main(){
     printf("\n\n=== System Startup ===\n");
 
@@ -277,21 +275,22 @@ int main(){
     /*************************
     *  Thread configuration  *
     *************************/
-    distanceSensorThread.start(callback(&distanceSensorEventQueue, &EventQueue::dispatch_forever));
-    distanceSensorPollStarter.attach(&enqueuePoll, 100ms);
+    distanceSensorThread.start(callback(&distanceSensorEventQueue, &EventQueue::dispatch_forever));    //set the distance sensor thread to continuously execute anything in the distance sensor event queue
+    distanceSensorPollStarter.attach(&enqueuePoll, 100ms);                  //set the distance sensor poll starting ticker to enqueue a poll of the distance every 100ms
 
-    lcdRefreshThread.start(callback(&lcdRefreshEventQueue, &EventQueue::dispatch_forever));
-    lcdRefreshTicker.attach(&enqueueLcdRefresh, 100ms);
-    rtClockHandler.attach(&enqueueRTClockTick, 1s);
+    outputRefreshThread.start(callback(&outputModificationEventQueue, &EventQueue::dispatch_forever)); //set the LCD and alarm refresh thread to continously execute anything in the output modification event queue
+    outputRefreshTicker.attach(&enqueueOutputRefresh, 100ms);               //set the output refresh starting ticker to enqueue an output refresh every 100 ms
+    rtClockHandler.attach(&enqueueRTClockTick, 1s);                         //set the real-world clock time ticker to enqueue an increment ever second (executed in the output modifications event queue)
 
-    matrixThread.start(callback(&matrixOpsEventQueue, &EventQueue::dispatch_forever));
-    matrixAlternationTicker.attach(&enqueueMatrixAlternation, 10ms);
+    matrixThread.start(callback(&matrixOpsEventQueue, &EventQueue::dispatch_forever));  //set the matrix I/O thread to continously execute anything in the matrix operations event queue
+    matrixAlternationTicker.attach(&enqueueMatrixAlternation, 10ms);        //set the output to matrix alternation ticker to enqueue an alternation every 10ms
 
-    while(true){
-        thread_sleep_for(1);
-        bounceHandlerMutex.lock();
-        if(bounceLockout > 0) bounceLockout--;
-        bounceHandlerMutex.unlock();
+    
+    while(true){ //Idle on main thread to prevent program from exiting
+        thread_sleep_for(1);                    //timeout thread for 1ms every cycle with no mutexes locked.
+        bounceHandlerMutex.lock();              //(0) lock the bounce handler mutex to avoid concurrent R/W operations from another thread
+        if(bounceLockout > 0) bounceLockout--;  //decrement the bounce lockout if it is still greater than 0 after a recent rising edge button press
+        bounceHandlerMutex.unlock();            //(0) unlock the bounce handler immediately after the critical section is exited
     }
     return 0;
 }
@@ -331,7 +330,60 @@ void alternateMatrixInput(){
     //keypadButtonPressMutex.unlock();
 }
 
+
+/**
+* void handleMatrixButtonEvent
+* Reused from Project 2
+* non-ISR function
+*
+* Summary of the function:
+*    This function converts any event triggered by a matrix button input into a character, handles duplicate events due to bounce, and calls handleInputKey on the rising edge of filtered results.
+*
+* Parameters:   
+*    - isRisingEdgeInterrupt - boolean indicating whether the trigger event is a rising or falling edge of a button press
+*    - column                - integer 0-3 indicating the matrix column of the input button press, used to map to the proper key value
+*    - row                   - integer 0-3 indicating the matrix row of the input button press, used to map to the proper key value
+*
+* Return value:
+*    None
+*
+* Outputs:
+*    handleInputKey called to modify system state based on button press.
+*    
+* Shared variables accessed:
+*    bounce lockout  -  mutex (8)
+*
+* Helper ISR Functions:
+*    rising_isr_abc
+*    falling_isr_abc
+*    rising_isr_369
+*    falling_isr_369
+*    rising_isr_258
+*    falling_isr_258
+*    rising_isr_147
+*    falling_isr_147
+*
+*/
+void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row){
+    char detectedKey = keyValues[column][row];      //fetch the char value associated with the index that was detected
+    if(isRisingEdgeInterrupt){
+        bounceHandlerMutex.lock();                //(0) lock bounce handler mutex to avoid concurrent access
+        if(!charPressed && bounceLockout == 0){   //fail immediately if another key is pressed or was pressed recently
+            bounceLockout = bounceTimeoutWindow;  //ensure no additional events are acted upon
+            charPressed = detectedKey;            //set the global variable charPressed to the detected key press
+            handleInputKey(charPressed);          //(0) call the function to handle the input key without unlocking the mutex
+        }
+        bounceHandlerMutex.unlock();              //unlock the bounce handler mutex only after all updates to system state have been completed
+    }else{
+        if(charPressed == detectedKey){
+            charPressed = '\0';                 //reset the char value to '\0' to indicate that no key is pressed
+        }
+    }
+}
+
+//Helper Functions:
 //Reused from Project 2
+// Handle interrupts by enqueueing matrix operation queue events to address the cause of the interrupt in a non-ISR context
 void rising_isr_abc(void) {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  ColABC, keypadVccRow);}
 void falling_isr_abc(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, ColABC, keypadVccRow);}
 void rising_isr_369(void) {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col369, keypadVccRow);}
@@ -342,164 +394,87 @@ void rising_isr_147(void) {matrixOpsEventQueue.call(handleMatrixButtonEvent, Ris
 void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col147, keypadVccRow);}
 
 
-//Reused from Project 2
-//non-ISR function
-void handleMatrixButtonEvent(int isRisingEdgeInterrupt, int column, int row){
-    char detectedKey = keyValues[column][row];      //fetch the char value associated with the index that was detected
-    if(isRisingEdgeInterrupt){
-        bounceHandlerMutex.lock();
-        if(!charPressed && bounceLockout == 0){   //fail immediately if another key is pressed or was pressed recently
-            bounceLockout = bounceTimeoutWindow;  //ensure no additional events are acted upon
-            charPressed = detectedKey;
-            handleInputKey(charPressed);
-        }
-        bounceHandlerMutex.unlock();
-    }else{
-        if(charPressed == detectedKey){
-            charPressed = '\0';                 //reset the char value to '\0' to indicate that no key is pressed
-        }
-    }
-}
 
 
 //MACRO to update an input number that will work as a timestamp.
-//Due to the variable scope of incrementInputIndex, this cannot effectively be a function.
-#define updateTimeData  lcdOutputTableRW.lock();                                                              \
-                        lcdOutputTextTable[entryState + 1][timeInputPositions[timeInputIndex]] = charPressed; \
-                        lcdOutputTableRW.unlock();                                                            \
-                        incrementInputIndex=true;
+//Due to the variable scope of incrementInputIndex, this set of frequently called lines cannot effectively be a function.
+#define updateTimeData  lcdOutputTableRW.lock();    /*(4) lock the LCD output table mutex before modifying values in the table*/          \
+                        lcdOutputTextTable[entryState + 1][timeInputPositions[timeInputIndex]] = charPressed; /*modify table values*/ \
+                        lcdOutputTableRW.unlock();  /*(4) unlock the table mutex as soon as the operation is completed*/                  \
+                        incrementInputIndex=true;   /*indicate that the input index must be updated*/
 
 
-//Reused from Project 2
-//non-ISR function
+
+//
 //todo: fix Mutex ordering
-//todo: switch D: reconfigure
 //todo: add Watchdog for when a button press is held for longer than 60 seconds
+
+/**
+* void handleInputKey()
+* non-ISR Function
+* Reused from Project 2
+*
+* Summary of the function:
+*    
+*
+* Parameters:   
+*    
+*
+* Return value:
+*    
+*
+* Outputs:
+*    
+*
+* Shared variables accessed:
+*    
+*
+* Helper ISR Function:
+*    
+*/
 void handleInputKey(char charPressed){
-    // printerMutex.lock();
-    // printf("Key pressed: %c\n", charPressed);
-    // printerMutex.unlock();
-    //TODO: handle state-based logic
-    currentStateRW.lock();
-    int entryState = currentState;      //act based on the system state preceeding the button press
+    currentStateRW.lock();              //(1)
+    int entryState = currentState;      //act based on the system state preceeding the button press to avoid rollover
 
     if(entryState == SetRealTime){
         switch(charPressed){
             case 'a':               //switch to next state and filter input of the current state
-                timeInputIndex = 0;
-                currentState = SetClosingTime;
-                for(int i = timeInputHours10; i <= timeInputSecs01; i++){
-                    if(lcdOutputTextTable[entryState + 1][i] > ':'){
-                        lcdOutputTextTable[entryState + 1][i] = '0';
-                    }
-                }
-                
-                break;
-            case 'c':               //reset input time
-                timeInputIndex = 0;
-                lcdOutputTextTable[entryState + 1][timeInputHours10] = 'h';
-                lcdOutputTextTable[entryState + 1][timeInputHours01] = 'h';
-                lcdOutputTextTable[entryState + 1][timeInputMins10] = 'm';
-                lcdOutputTextTable[entryState + 1][timeInputMins01] = 'm';
-                lcdOutputTextTable[entryState + 1][timeInputSecs10] = 's';
-                lcdOutputTextTable[entryState + 1][timeInputSecs01] = 's';
-                
-                break;
-
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-            case '0':
-                int incrementInputIndex = false;
-
-                //select the correct time input position to update
-                int timeInputPosition = timeInputPositions[timeInputIndex];
-                if(timeInputPosition == timeInputHours10){
-                    if(charPressed < '3'){  //tens of hours cannot exceed 2
-                        updateTimeData;
-                    }
-                }
-
-               if(timeInputPosition == timeInputHours01){
-                    if(lcdOutputTextTable[entryState + 1][timeInputHours10] < '3' && charPressed < '4'  ||   //hours cannot exceed 23 (23:59:59 is followed by 00:00:00)
-                       lcdOutputTextTable[entryState + 1][timeInputHours10] < '2'                            //hours can reach 19:00:00 and 09:00:00
-                    ){
-                        updateTimeData;
-                    }
-                }
-
-                if(timeInputPosition == timeInputMins10){
-                    if(charPressed < '6'){  //minutes cannot exceed 59
-                        updateTimeData;
-                    }
-                }
-
-                if(timeInputPosition == timeInputMins01){
-                    updateTimeData;         //the entire range of 0-9 is valid for single minutes
-                }
-
-                if(timeInputPosition == timeInputSecs10){
-                    if(charPressed < '6'){  //seconds cannot exceed 59
-                        updateTimeData;
-                    }
-
-                }
-
-                if(timeInputPosition == timeInputSecs01){
-                    updateTimeData;         //the entire range of 0-9 is valid for single seconds
-                }
-
-                if(incrementInputIndex) timeInputIndex++;
-                break;
-
-        }
-    }
-    
-    if(entryState == SetClosingTime){
-        switch(charPressed){
-            case 'a':               //switch to next state and filter input of the current state
-                timeInputIndex = 0;
-                currentState = SetMax;
+                timeInputIndex = 0; //reset the index of the next button to be updated to 0
+                currentState = SetClosingTime;  //set the system state to setting the closing time
 
                 //iterate over the time input and replace any remaining 'h','m', and 's' characters with '0'
-                for(int i = timeInputHours10; i <= timeInputSecs01; i++){
-                    if(lcdOutputTextTable[entryState + 1][i] > ':'){
-                        lcdOutputTextTable[entryState + 1][i] = '0';
+                for(int i = timeInputHours10; i <= timeInputSecs01; i++){   //iterate over the confirmed input time of the SetRealTime state output string
+                    if(lcdOutputTextTable[entryState + 1][i] > ':'){        //fix any unset characters (where the value is still h,m,s (all ASCII values greater than ':'))
+                        lcdOutputTextTable[entryState + 1][i] = '0';        //by setting those unset characters to 0
                     }
                 }
                 
                 break;
-            case 'c':               //reset input time
-                timeInputIndex = 0;
-                lcdOutputTextTable[entryState + 1][timeInputHours10] = 'h';
-                lcdOutputTextTable[entryState + 1][timeInputHours01] = 'h';
-                lcdOutputTextTable[entryState + 1][timeInputMins10] = 'm';
-                lcdOutputTextTable[entryState + 1][timeInputMins01] = 'm';
-                lcdOutputTextTable[entryState + 1][timeInputSecs10] = 's';
-                lcdOutputTextTable[entryState + 1][timeInputSecs01] = 's';
-                
+            
+            case 'c':               //reset time input when the button C is pressed
+                timeInputIndex = 0; //reset the index of the next button to be updated to 0
+                lcdOutputTextTable[entryState + 1][timeInputHours10] = 'h'; //reset the value of tens of hours to h
+                lcdOutputTextTable[entryState + 1][timeInputHours01] = 'h'; //reset the value of hours to h
+                lcdOutputTextTable[entryState + 1][timeInputMins10] = 'm';  //reset the value of tens of minutes to m
+                lcdOutputTextTable[entryState + 1][timeInputMins01] = 'm';  //reset the value of minutes to m
+                lcdOutputTextTable[entryState + 1][timeInputSecs10] = 's';  //reset the value of tens of seconds to s
+                lcdOutputTextTable[entryState + 1][timeInputSecs01] = 's';  //reset the value of seconds to s
                 break;
 
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
+            case '1': //Handle all number inputs in the same manner:
+            case '2': //Update the time input of the state
+            case '3': //if the input number is valid for the current time index
+            case '4': //otherwise take no action
+            case '5': 
+            case '6': 
             case '7':
             case '8':
             case '9':
             case '0':
-                int incrementInputIndex = false;
+                bool incrementInputIndex = false;    //indicate if a valid button press was detected and the next time index should be switched to
+                int timeInputPosition = timeInputPositions[timeInputIndex]; //the current index of the time input position to update
+                // input number does not break the conditions required for the time to remain valid on a 24 hour clock
 
-                //select the correct time input position to update
-                int timeInputPosition = timeInputPositions[timeInputIndex];
                 if(timeInputPosition == timeInputHours10){
                     if(charPressed < '3'){  //tens of hours cannot exceed 2
                         updateTimeData;
@@ -508,8 +483,7 @@ void handleInputKey(char charPressed){
 
                 if(timeInputPosition == timeInputHours01){
                     if(lcdOutputTextTable[entryState + 1][timeInputHours10] < '3' && charPressed < '4'  ||   //hours cannot exceed 23 (23:59:59 is followed by 00:00:00)
-                       lcdOutputTextTable[entryState + 1][timeInputHours10] < '2'                            //hours can reach 19:00:00 and 09:00:00
-                    ){   
+                       lcdOutputTextTable[entryState + 1][timeInputHours10] < '2'){                            //hours can reach 19:00:00 and 09:00:00
                         updateTimeData;
                     }
                 }
@@ -535,20 +509,102 @@ void handleInputKey(char charPressed){
                     updateTimeData;         //the entire range of 0-9 is valid for single seconds
                 }
 
-                if(incrementInputIndex) timeInputIndex++;
-                break;
+                if(incrementInputIndex) timeInputIndex++;   //this is done at the end to prevent a cascade of multiple time indexes being updated due to a number input that is valid for all of them
 
+                break;
         }
     }
     
+    if(entryState == SetClosingTime){
+        switch(charPressed){
+            case 'a':               //switch to next state and filter input of the current state
+                timeInputIndex = 0; //reset the index of the next button to be updated to 0
+                currentState = SetMax; //set the system state to configuring the maximum distance within the sensor range
+
+                //iterate over the time input and replace any remaining 'h','m', and 's' characters with '0'
+                for(int i = timeInputHours10; i <= timeInputSecs01; i++){   //iterate over the confirmed input time of the SetRealTime state output string
+                    if(lcdOutputTextTable[entryState + 1][i] > ':'){        //fix any unset characters (where the value is still h,m,s (all ASCII values greater than ':'))
+                        lcdOutputTextTable[entryState + 1][i] = '0';        //by setting those unset characters to 0
+                    }
+                }
+                
+                break;
+            case 'c':               //reset time input when the button C is pressed
+                timeInputIndex = 0; //reset the index of the next button to be updated to 0
+                lcdOutputTextTable[entryState + 1][timeInputHours10] = 'h'; //reset the value of tens of hours to h
+                lcdOutputTextTable[entryState + 1][timeInputHours01] = 'h'; //reset the value of hours to h
+                lcdOutputTextTable[entryState + 1][timeInputMins10] = 'm';  //reset the value of tens of minutes to m
+                lcdOutputTextTable[entryState + 1][timeInputMins01] = 'm';  //reset the value of minutes to m
+                lcdOutputTextTable[entryState + 1][timeInputSecs10] = 's';  //reset the value of tens of seconds to s
+                lcdOutputTextTable[entryState + 1][timeInputSecs01] = 's';  //reset the value of seconds to s
+                break;
+
+            case '1': //Handle all number inputs in the same manner:
+            case '2': //Update the time input of the state
+            case '3': //if the input number is valid for the current time index
+            case '4': //otherwise take no action
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '0':
+                bool incrementInputIndex = false;    //indicate if a valid button press was detected and the next time index should be switched to
+                int timeInputPosition = timeInputPositions[timeInputIndex]; //the current index of the time input position to update
+ 
+                //repeat for each time input position.  This cannot be a single for loop due to the variance of rollover conditions for each digit
+                //if the current time input position matches the time input position of this time unit, make sure that the
+                // input number does not break the conditions required for the time to remain valid on a 24 hour clock
+
+                if(timeInputPosition == timeInputHours10){
+                    if(charPressed < '3'){  //tens of hours cannot exceed 2
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputHours01){
+                    if(lcdOutputTextTable[entryState + 1][timeInputHours10] < '3' && charPressed < '4'  ||   //hours cannot exceed 23 (23:59:59 is followed by 00:00:00)
+                       lcdOutputTextTable[entryState + 1][timeInputHours10] < '2'){                            //hours can reach 19:00:00 and 09:00:00
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputMins10){
+                    if(charPressed < '6'){  //minutes cannot exceed 59
+                        updateTimeData;
+                    }
+                }
+
+                if(timeInputPosition == timeInputMins01){
+                    updateTimeData;         //the entire range of 0-9 is valid for single minutes
+                }
+
+                if(timeInputPosition == timeInputSecs10){
+                    if(charPressed < '6'){  //seconds cannot exceed 59
+                        updateTimeData;
+                    }
+
+                }
+
+                if(timeInputPosition == timeInputSecs01){
+                    updateTimeData;         //the entire range of 0-9 is valid for single seconds
+                }
+
+                if(incrementInputIndex) timeInputIndex++;   //this is done at the end to prevent a cascade of multiple time indexes being updated due to a number input that is valid for all of them
+
+                break;
+        }
+    }
+    
+    //todo: continue documentation from here
     if(entryState == SetMax){
         switch(charPressed){
             case 'a':
-                stableDistanceRWMutex.lock();
+                stableDistanceRWMutex.lock();   //(3)
                 maxDistanceRW.lock();
                 maxDistance = stableDistance;
                 maxDistanceRW.unlock();
-                stableDistanceRWMutex.unlock();
+                stableDistanceRWMutex.unlock(); //(3)
                 currentState = SetMin;
                 break;
         }
@@ -557,7 +613,7 @@ void handleInputKey(char charPressed){
     if(entryState == SetMin){
         switch(charPressed){
             case 'a':
-                stableDistanceRWMutex.lock();
+                stableDistanceRWMutex.lock();  //(3)
                 minDistanceRW.lock();
                 alarmArmedRW.lock();
                 
@@ -567,7 +623,7 @@ void handleInputKey(char charPressed){
 
                 alarmArmedRW.unlock();
                 minDistanceRW.unlock();
-                stableDistanceRWMutex.unlock();
+                stableDistanceRWMutex.unlock();  //(3)
                 break;
         }
     }
@@ -593,11 +649,11 @@ void handleInputKey(char charPressed){
         
     }
 
-    outputChangesMadeRW.lock();
+    outputChangesMadeRW.lock();     //(2)
     outputChangesMade = true;
-    outputChangesMadeRW.unlock();
+    outputChangesMadeRW.unlock();   //(2)
 
-    currentStateRW.unlock();
+    currentStateRW.unlock();        //(1)
 }
 
 
@@ -649,16 +705,16 @@ int updateStableDistance(){
     }
     int averageDistance = sum / stabilizerArrayLen;
     
-    int acquiredLock = stableDistanceRWMutex.trylock();
+    bool acquiredLock = stableDistanceRWMutex.trylock();  //(3)
     if(acquiredLock){
         if(stableDistance != averageDistance){
-            outputChangesMadeRW.lock();
+            outputChangesMadeRW.lock();          //(2)
             outputChangesMade = true;
-            outputChangesMadeRW.unlock();
+            outputChangesMadeRW.unlock();        //(2)
 
             stableDistance = averageDistance;
         }
-        stableDistanceRWMutex.unlock();
+        stableDistanceRWMutex.unlock();       //(3)
     }
     return averageDistance;
 }
@@ -672,11 +728,11 @@ ull getTimeSinceStart() {
 
 
 //ISR function called by ticker to enqueue main function: tickRealTimeClock
-void enqueueRTClockTick(){lcdRefreshEventQueue.call(tickRealTimeClock);}
+void enqueueRTClockTick(){outputModificationEventQueue.call(tickRealTimeClock);}
 void tickRealTimeClock(){
-    currentStateRW.lock();
-    outputChangesMadeRW.lock();
-    lcdOutputTableRW.lock();
+    currentStateRW.lock();          //(1)
+    outputChangesMadeRW.lock();     //(2)
+    lcdOutputTableRW.lock();        //(4)
     outputChangesMade = true;
 
     if(currentState != SetRealTime){    //only update the clock when not setting the clock
@@ -714,17 +770,18 @@ void tickRealTimeClock(){
         lcdOutputTextTable[Observer + 1][i] = lcdOutputTextTable[SetRealTime + 1][i];
     }
 
-    lcdOutputTableRW.unlock();
-    outputChangesMadeRW.unlock();
-    currentStateRW.unlock();
+    lcdOutputTableRW.unlock();     //(4)
+    outputChangesMadeRW.unlock();  //(2)
+    currentStateRW.unlock();       //(1)
 }
 
-void enqueueLcdRefresh(){lcdRefreshEventQueue.call(populateLcdOutput);}
+void enqueueOutputRefresh(){outputModificationEventQueue.call(populateLcdOutput);}
 //reused from Project 2 due to modularity of code and reuse of peripheral
 void populateLcdOutput(){
-    currentStateRW.lock();
-    outputChangesMadeRW.lock();
-    stableDistanceRWMutex.lock();
+    currentStateRW.lock();          //(1)
+    outputChangesMadeRW.lock();     //(2)
+    stableDistanceRWMutex.lock();   //(3)
+    lcdOutputTableRW.lock();        //(4)
     maxDistanceRW.lock();
     minDistanceRW.lock();
     //printerMutex.lock();
@@ -733,9 +790,10 @@ void populateLcdOutput(){
         // printerMutex.unlock();
         minDistanceRW.unlock();
         maxDistanceRW.unlock();
-        stableDistanceRWMutex.unlock();
-        outputChangesMadeRW.unlock();
-        currentStateRW.unlock();
+        lcdOutputTableRW.unlock();       //(4)
+        stableDistanceRWMutex.unlock();  //(3)
+        outputChangesMadeRW.unlock();    //(2)
+        currentStateRW.unlock();         //(1)
         return;
     }
     outputChangesMade = false;
@@ -798,9 +856,10 @@ void populateLcdOutput(){
     // printerMutex.unlock();
     minDistanceRW.unlock();
     maxDistanceRW.unlock();
-    stableDistanceRWMutex.unlock();
-    outputChangesMadeRW.unlock();
-    currentStateRW.unlock();
+    lcdOutputTableRW.unlock();        //(4)
+    stableDistanceRWMutex.unlock();   //(3)
+    outputChangesMadeRW.unlock();     //(2)
+    currentStateRW.unlock();          //(1)
 }
 
 
