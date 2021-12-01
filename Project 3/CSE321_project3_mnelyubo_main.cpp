@@ -695,7 +695,6 @@ void handleInputKey(char charPressed){
         }
     }
 
-    //todo: continue documentation from here
     //Inputs Independent of State:
     switch(charPressed){
         case 'd':       //return to setup, deactivate the alarm until setup completes
@@ -805,6 +804,9 @@ void distanceEchoFallHandler(){
 void distanceEchoRiseHandler(){
     riseEchoTimestamp=getTimeSinceStart();
 }
+
+
+//todo: document from here down
 
 //locks and writes to the stableDistance shared variable
 int updateStableDistance(){
