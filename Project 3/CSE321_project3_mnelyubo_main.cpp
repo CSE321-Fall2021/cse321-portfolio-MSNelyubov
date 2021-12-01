@@ -1,33 +1,34 @@
 /******************************************************************************
-*   File Name:      CSE321_project3_mnelyubo_range_test.cpp
-*   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
-*   Date Created:   11/20/2021
-*   Last Modified:  11/20/2021
-*   Purpose:
-*       This program operates four peripherals to notify workers about if there
-*         are food items remaining in a container that can be taken home
-*         at closing time.
-*
-*   Functions:      
-*
-*   Assignment:     Project 3
-*
-*   Inputs:         Range Detection Sensor, 4x4 Matrix Keypad
-*
-*   Outputs:        Serial printout, LCD, Alarm Buzzer
-*
-*   Constraints:    Range Detection Sensor must be connected to the Nucleo with the following pins:
-*                     Vcc  - 5V
-*                     Trig - PC_9
-*                     Echo - PC_8
-*                     Gnd  - GND
-*
-*   References:
-*       HC-SR04 audio sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
-*       NUCLEO datasheet:                  https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
-*       MBED OS API: timer                 https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
-*
-******************************************************************************/
+ *   File Name:      CSE321_project3_mnelyubo_range_test.cpp
+ *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
+ *   Date Created:   11/20/2021
+ *   Last Modified:  11/20/2021
+ *   Purpose:
+ *       This program operates four peripherals to notify workers about if there
+ *         are food items remaining in a container that can be taken home
+ *         at closing time.
+ *
+ *   Functions:      
+ *
+ *   Assignment:     Project 3
+ *
+ *   Inputs:         Range Detection Sensor, 4x4 Matrix Keypad
+ *
+ *   Outputs:        Serial printout, LCD, Alarm Buzzer
+ *
+ *   Constraints:    Range Detection Sensor must be connected to the Nucleo with the following pins:
+ *                     Vcc  - 5V
+ *                     Trig - PC_9
+ *                     Echo - PC_8
+ *                     Gnd  - GND
+ *
+ *   References:
+ *       HC-SR04 distance sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
+ *       NUCLEO datasheet:                     https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
+ *       MBED OS API: timer                    https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
+ *       MBED OS API: Watchdog                 https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
+ *
+ ******************************************************************************/
 
 #include "mbed.h"
 #include "1802.h"
@@ -301,30 +302,30 @@ int main(){
 
 
 /**
-* void alternateMatrixInput()
-* non-ISR Function
-* Reused from Project 2
-*
-* Summary of the function:
-*    This function alternates which column of the matrix receives voltage to bounce back a signal on the input pins that are expecting interrupt events.
-*    This function only switches matrix columns if no character is currently pressed.
-*
-* Parameters:   
-*    None
-*
-* Return value:
-*    None
-*
-* Outputs:
-*    Exactly one digital high DC output signal between pins PE_2, PE_4, PE_5, and PE_6 will be sent at the end of the execution of this function
-*    During the execution of the function, a brief period (~1ms) may exist where none of the four channels are given a non-zero voltage.
-*
-* Shared variables accessed:
-*    None.  Global variable charPressed is exclusive to operations executing on the matrix operations thread, which can only be one function at any point in time, so a mutex is not required.
-*
-* Helper ISR Function:
-*    enqueueMatrixAlternation
-*/
+ * void alternateMatrixInput()
+ * non-ISR Function
+ * Reused from Project 2
+ *
+ * Summary of the function:
+ *    This function alternates which column of the matrix receives voltage to bounce back a signal on the input pins that are expecting interrupt events.
+ *    This function only switches matrix columns if no character is currently pressed.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    Exactly one digital high DC output signal between pins PE_2, PE_4, PE_5, and PE_6 will be sent at the end of the execution of this function
+ *    During the execution of the function, a brief period (~1ms) may exist where none of the four channels are given a non-zero voltage.
+ *
+ * Shared variables accessed:
+ *    None.  Global variable charPressed is exclusive to operations executing on the matrix operations thread, which can only be one function at any point in time, so a mutex is not required.
+ *
+ * Helper ISR Function:
+ *    enqueueMatrixAlternation
+ */
 void alternateMatrixInput(){
     if(charPressed) return;     //secondary safety to prevent repetition if the Mutex fails
 
@@ -355,38 +356,41 @@ void enqueueMatrixAlternation(){matrixOpsEventQueue.call(alternateMatrixInput);}
 
 
 /**
-* void handleMatrixButtonEvent
-* Reused from Project 2
-* non-ISR function
-*
-* Summary of the function:
-*    This function converts any event triggered by a matrix button input into a character, handles duplicate events due to bounce, and calls handleInputKey on the rising edge of filtered results.
-*
-* Parameters:   
-*    - isRisingEdgeInterrupt - boolean indicating whether the trigger event is a rising or falling edge of a button press
-*    - column                - integer 0-3 indicating the matrix column of the input button press, used to map to the proper key value
-*    - row                   - integer 0-3 indicating the matrix row of the input button press, used to map to the proper key value
-*
-* Return value:
-*    None
-*
-* Outputs:
-*    handleInputKey called to modify system state based on button press.
-*    
-* Shared variables accessed:
-*    bounce lockout  -  mutex (8)
-*
-* Helper ISR Functions:
-*    rising_isr_abc
-*    falling_isr_abc
-*    rising_isr_369
-*    falling_isr_369
-*    rising_isr_258
-*    falling_isr_258
-*    rising_isr_147
-*    falling_isr_147
-*
-*/
+ * void handleMatrixButtonEvent
+ * Reused from Project 2
+ * non-ISR function
+ *
+ * Summary of the function:
+ *    This function converts any event triggered by a matrix button input into a character, handles duplicate events due to bounce, and calls handleInputKey on the rising edge of filtered results.
+ *
+ *    A hardware watchdog timer is implemented in this function to start a system reset if an input button is not released for 30 seconds
+ *      some code in this function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
+ *
+ * Parameters:   
+ *    - isRisingEdgeInterrupt - boolean indicating whether the trigger event is a rising or falling edge of a button press
+ *    - column                - integer 0-3 indicating the matrix column of the input button press, used to map to the proper key value
+ *    - row                   - integer 0-3 indicating the matrix row of the input button press, used to map to the proper key value
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    handleInputKey called to modify system state based on button press.
+ *    
+ * Shared variables accessed:
+ *    bounce lockout  -  mutex (8)
+ *
+ * Helper ISR Functions:
+ *    rising_isr_abc
+ *    falling_isr_abc
+ *    rising_isr_369
+ *    falling_isr_369
+ *    rising_isr_258
+ *    falling_isr_258
+ *    rising_isr_147
+ *    falling_isr_147
+ *
+ */
 void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row){
     char detectedKey = keyValues[column][row];      //fetch the char value associated with the index that was detected
     if(isRisingEdgeInterrupt){
@@ -422,47 +426,47 @@ void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, Fal
 
 //todo: add Watchdog for when a button press is held for longer than 60 seconds
 /**
-* void handleInputKey()
-* non-ISR Function
-* Reused from Project 2
-*
-* Summary of the function:
-*    This function modifies the system state and internal variables based on the user input to the system.
-*    While in the SetRealTime and SetClosingTime states,
-*      Numeric inputs are used to configure the two respective times.
-*      A is used to confirm the current input, defaulting all unentered positions to 0.
-*      C is used to clear the current input time and begin again from the tens of hours.
-*
-*    While in the SetMax and SetMin states,
-*      A is used to lock in the current distance measured by the distance sensor for that particular mode.
-*    
-*   While in the Observer state,
-*      # is used to toggle the alarm being armed or not.
-*
-*    While in any state,
-*      D is used to reset the system to the SetRealTime state to reconfigure the system.
-*
-* Parameters:   
-*    - charPressed - an ASCII character value indicating the user input, based on which to modify the system state or variables
-*
-* Return value:
-*    None
-*
-* Outputs:
-*    None directly.  The configuration of the alarm and LCD outputs may be modified due to calling this function.
-*
-* Shared variables accessed:
-*    currentState       - mutex (1)
-*    outputChangesMade  - mutex (2)
-*    stableDistance     - mutex (3)
-*    lcdOutputTextTable - mutex (4)
-*    maxDistance        - mutex (5)
-*    minDistance        - mutex (6)
-*    alarmArmed         - mutex (7)
-*
-* Helper ISR Function:
-*    no direct helper.  Dependent on handleMatrixButtonEvent
-*/
+ * void handleInputKey()
+ * non-ISR Function
+ * Reused from Project 2
+ *
+ * Summary of the function:
+ *    This function modifies the system state and internal variables based on the user input to the system.
+ *    While in the SetRealTime and SetClosingTime states,
+ *      Numeric inputs are used to configure the two respective times.
+ *      A is used to confirm the current input, defaulting all unentered positions to 0.
+ *      C is used to clear the current input time and begin again from the tens of hours.
+ *
+ *    While in the SetMax and SetMin states,
+ *      A is used to lock in the current distance measured by the distance sensor for that particular mode.
+ *    
+ *   While in the Observer state,
+ *      # is used to toggle the alarm being armed or not.
+ *
+ *    While in any state,
+ *      D is used to reset the system to the SetRealTime state to reconfigure the system.
+ *
+ * Parameters:   
+ *    - charPressed - an ASCII character value indicating the user input, based on which to modify the system state or variables
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    None directly.  The configuration of the alarm and LCD outputs may be modified due to calling this function.
+ *
+ * Shared variables accessed:
+ *    currentState       - mutex (1)
+ *    outputChangesMade  - mutex (2)
+ *    stableDistance     - mutex (3)
+ *    lcdOutputTextTable - mutex (4)
+ *    maxDistance        - mutex (5)
+ *    minDistance        - mutex (6)
+ *    alarmArmed         - mutex (7)
+ *
+ * Helper ISR Function:
+ *    no direct helper.  Dependent on handleMatrixButtonEvent
+ */
 
 //MACRO to update an input number that will work as a timestamp.
 //Due to the variable scope of incrementInputIndex, this set of frequently called lines cannot effectively be a function.
@@ -703,6 +707,28 @@ void handleInputKey(char charPressed){
 
 void enqueuePoll(){distanceSensorEventQueue.call(pollDistanceSensor);}
 //non-ISR function
+/**
+ * void pollDistanceSensor()
+ * non-ISR function
+ * 
+ * Summary of the function:
+ *    This function starts the distance echo timer and sends a digital high signal to the trigger pin for 10 us
+ *
+ * Parameters:
+ *    None
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    GPIO pin PC_9 is sent a digital high signal for 10 us and then reset to 0
+ *
+ * Shared variables accessed:
+ *    distanceEchoTimer is started
+ *
+ * Helper ISR Function:
+ *    enqueuePoll
+ */
 void pollDistanceSensor(){
     distanceEchoTimer.start();  //start the timer to measure response time
 
@@ -712,6 +738,32 @@ void pollDistanceSensor(){
     GPIOC->ODR &= ~(0x200);
 }
 
+/**
+ * void processDistanceData()
+ * non-ISR function
+ * 
+ * Summary of the function:
+ *    This function converts the duration of the echo response from the distance sensor into a duration that is then added to the stabilizer distance array.
+ *    Once the new distance is added to the circular stabilizer array, a function to update the stabilized distance value is called.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    None
+ *
+ * Shared variables accessed:
+ *    riseEchoTimestamp and fallEchoTimestamp are accessed and cleared by this function
+ *    a value of the distanceBuffer is overwritten by this function
+ *
+ * Helper ISR Function:
+ *    distanceEchoFallHandler
+ *    distanceEchoRiseHandler
+ *
+ */
 void processDistanceData(){
     ull deltaTime = fallEchoTimestamp - riseEchoTimestamp;
     int distance = deltaTime / 58;
