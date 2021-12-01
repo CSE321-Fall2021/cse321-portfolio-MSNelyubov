@@ -82,8 +82,8 @@
 //Distance Sensor data
 #define POLLING_HIGH_TIME     10us
 #define POLLING_CYCLE_TIME_MS 100
-#define DISTANCE_MINIMUM 2    /* sensor min range is stated to be 2cm */
-#define DISTANCE_MAXIMUM 400  /* sensor max range is stated to be 4m  */
+#define DISTANCE_MINIMUM 2    /* sensor min range is stated to be 2   cm */
+#define DISTANCE_MAXIMUM 400  /* sensor max range is stated to be 400 cm */
 
 //data type alias
 #define ull unsigned long long
