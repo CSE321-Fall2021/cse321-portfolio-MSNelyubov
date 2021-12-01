@@ -960,8 +960,42 @@ void enqueueRTClockTick(){outputModificationEventQueue.call(tickRealTimeClock);}
 //todo: document from here down
 
 
-void enqueueOutputRefresh(){outputModificationEventQueue.call(populateLcdOutput);}
-//reused from Project 2 due to modularity of code and reuse of peripheral
+
+/**
+ * void populateLcdOutput()
+ * Reused from Project 2
+ * non-ISR function
+ * 
+ * Summary of the function:
+ *    This function performs the following operations:
+ *     1. Updates the LCD output string to match the latest distance data from the stabilized distance data.
+ *     2. Checks if the alarm should be activated or deactivated.
+ *     3. Sets the state of the alarm accordingly.
+ *     4. Updates the text of each line of the LCD based on the present state.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    LCD text is updated
+ *    Alarm may be turned on/off
+ *
+ * Shared variables accessed:
+ *    currentState       - mutex (1)
+ *    outputChangesMade  - mutex (2)
+ *    stableDistance     - mutex (3)
+ *    lcdOutputTextTable - mutex (4)
+ *    maxDistance        - mutex (5)
+ *    minDistance        - mutex (6)
+ *    alarmArmed         - mutex (7)
+ *
+ * Helper ISR Function:
+ *    enqueueOutputRefresh
+ *
+ */
 void populateLcdOutput(){
     currentStateRW.lock();          //(1)
     outputChangesMadeRW.lock();     //(2)
@@ -979,28 +1013,29 @@ void populateLcdOutput(){
         currentStateRW.unlock();         //(1)
         return;
     }
+
     outputChangesMade = false;
 
     //update capacity distance in min/max states
     if(currentState == SetMax || currentState == SetMin){
-        lcdOutputTextTable[currentState + 1][distancePosition100] = '0' + (stableDistance/100) % 10;
-        lcdOutputTextTable[currentState + 1][distancePosition10]  = '0' + (stableDistance/10)  % 10;
-        lcdOutputTextTable[currentState + 1][distancePosition1]   = '0' + (stableDistance/1)   % 10;
+        lcdOutputTextTable[currentState + 1][distancePosition100] = '0' + (stableDistance/100) % 10;    //update 100's digit of displayed distance
+        lcdOutputTextTable[currentState + 1][distancePosition10]  = '0' + (stableDistance/10)  % 10;    //update 10's digit of displayed distance
+        lcdOutputTextTable[currentState + 1][distancePosition1]   = '0' + (stableDistance/1)   % 10;    //update 1's digit of displayed distance
     }
 
 
-    int spaceValue;
+    int spaceValue;  //the percentage number to be displayed in the Observer state
     //update the value of the percent of space used in the Observer State
-    if(maxDistance != minDistance){
-        spaceValue = 100 * (maxDistance - stableDistance);
-        spaceValue = spaceValue / (maxDistance - minDistance);
+    if(maxDistance != minDistance){ //ensure that values aren't equal to ensure no divide by zero error
+        spaceValue = 100 * (maxDistance - stableDistance);      //calculate numerator terms
+        spaceValue = spaceValue / (maxDistance - minDistance);  //factor in denominator
 
-        if(spaceValue < 0) spaceValue = 0;  //set a hard limit of 0% full in case the container moves
+        if(spaceValue < 0) spaceValue = 0;  //set a hard limit of 0% full in case the container moves backwards
 
-        lcdOutputTextTable[Observer + 1][percentPosition100] = '0' + (spaceValue/100) % 10;
-        lcdOutputTextTable[Observer + 1][percentPosition10]  = '0' + (spaceValue/10)  % 10;
-        lcdOutputTextTable[Observer + 1][percentPosition1]   = '0' + (spaceValue/1)   % 10;
-    }else{
+        lcdOutputTextTable[Observer + 1][percentPosition100] = '0' + (spaceValue/100) % 10;    //update 100's digit of displayed distance
+        lcdOutputTextTable[Observer + 1][percentPosition10]  = '0' + (spaceValue/10)  % 10;    //update 10's digit of displayed distance
+        lcdOutputTextTable[Observer + 1][percentPosition1]   = '0' + (spaceValue/1)   % 10;    //update 1's digit of displayed distance
+    }else{  //in the case that the min and max distances are equal, there is no range to have a percentage out of.  Display "N/0" instead of a number
         spaceValue = 1;   //set to an arbitrary positive value to prevent the alarm from sounding when distance is undefined
         lcdOutputTextTable[Observer + 1][percentPosition100] = 'N';
         lcdOutputTextTable[Observer + 1][percentPosition10]  = '/';
@@ -1008,27 +1043,26 @@ void populateLcdOutput(){
     }
 
     //update the state of the alarm
-    bool activateAlarm = false;
+    bool activateAlarm = false;     //initialize to false and look for an exception true case
     alarmArmedRW.lock();     //(7)
-    if(alarmArmed){
-        lcdOutputTextTable[Observer + 1][alarmIndicatorPosition] = alarmIndicatorArmed;
-        if(closingTimeCrossed() && spaceValue > 0){
-            activateAlarm = true;
+    if(alarmArmed){          //only proceed with activation of alarm if it is armed
+        lcdOutputTextTable[Observer + 1][alarmIndicatorPosition] = alarmIndicatorArmed; //set the display flag that the alarm is armed to true
+        if(closingTimeCrossed() && spaceValue > 0){                                     //only play the alarm if it is past closing time and the container is not empty
+            activateAlarm = true;                                                       //if both of these conditions are met, raise the flag to activate the alarm
         }
     }else{
-        lcdOutputTextTable[Observer + 1][alarmIndicatorPosition] = alarmIndicatorOff;
+        lcdOutputTextTable[Observer + 1][alarmIndicatorPosition] = alarmIndicatorOff;   //set the display flag that the alarm is armed to false
     }
     alarmArmedRW.unlock();   //(7)
 
     if(activateAlarm){
-        //send signal low to active low alarm pin (PB_11)
-        alarm_L.write(0);
+        alarm_L.write(0);        //send signal low  to active low alarm pin (PB_11), enabling the alarm
     }else{
-        //send signal high to active low alarm pin (PB_11)
-        alarm_L.write(1);
+        alarm_L.write(1);        //send signal high to active low alarm pin (PB_11), disabling the alarm
     }
 
     //refresh each line of the LCD display
+    //Reused from Project 2
     for(char line = 0; line < ROW; line++){
         char* printVal = lcdOutputTextTable[currentState + line];   //retrieve the string associated with the current line of the LCD
         lcdObject.setCursor(0, line);                       //reset cursor to position 0 of the line to be written to
@@ -1042,16 +1076,37 @@ void populateLcdOutput(){
     outputChangesMadeRW.unlock();     //(2)
     currentStateRW.unlock();          //(1)
 }
+//helper ISR Function
+void enqueueOutputRefresh(){outputModificationEventQueue.call(populateLcdOutput);}
 
-
-//returns true if the current time is greater than closing time.  Assumes that the calling thread has locked the lcdOutputTextTable mutex
+//  Assumes that the calling thread has locked the lcdOutputTextTable mutex
+/**
+ * bool closingTimeCrossed()
+ * non-ISR function
+ * 
+ * Summary of the function:
+ *    This function checks if the current time is later than closing time.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    Returns true if the current time is greater than closing time and false otherwise.
+ *
+ * Outputs:
+ *    None
+ *
+ * Shared variables accessed:
+ *    lcdOutputTextTable - mutex (4).  This mutex is not locked within the function because it is assumed that the calling function has locked the mutex.
+ *
+ */
 bool closingTimeCrossed(){
-
+    //iterate over the time indexes from most to least significant position
     for(int i = timeInputHours10; i<=timeInputSecs01; i++){
         //compare for a greater quantity of unit time
         if(lcdOutputTextTable[SetRealTime + 1][i] > lcdOutputTextTable[SetClosingTime + 1][i]) return true;       //current unit time is greater than closing unit time
         if(lcdOutputTextTable[SetRealTime + 1][i] < lcdOutputTextTable[SetClosingTime + 1][i]) return false;      //current unit time is less than closing unit time
-        //all remaining possibilities must have this unit of time equal and can thus be ignored
+        //all remaining possibilities must have this unit of time equal and can thus be ignored in future comparisons
     }
 
     //times are exactly equal if the for loop has been escaped.  Return false since it has not yet been *crossed*
