@@ -16,11 +16,19 @@
  *
  *   Outputs:        Serial printout, LCD, Alarm Buzzer
  *
- *   Constraints:    Range Detection Sensor must be connected to the Nucleo with the following pins:
- *                     Vcc  - 5V
- *                     Trig - PC_9
- *                     Echo - PC_8
- *                     Gnd  - GND
+ *   Constraints:    
+ *      Range Detection Sensor must be connected to the Nucleo with the following pins:
+ *          Vcc  - 5V
+ *          Trig - PC_9
+ *          Echo - PC_8
+ *          Gnd  - GND
+ *      LCD must be connected to the Nucleo with the following pins:
+ *          TODO
+ *      4x4 matrix keypad must be connected to the Nucleo with the following pins:
+ *          TODO
+ *      Buzzer module must be connected to the Nucleo with the following pins:
+ *          TODO
+ *
  *
  *   References:
  *       HC-SR04 distance sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
