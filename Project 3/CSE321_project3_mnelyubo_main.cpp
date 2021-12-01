@@ -71,6 +71,7 @@
 #define alarmIndicatorArmed '#'
 #define alarmIndicatorOff ' '
 
+#define WATCHDOG_TIMEOUT_DURATION_MS 30000 /*30 seconds*/
 
 //Reused from Project 2: dimension (row and column) of the Matrix keypad
 #define MatrixDim 4
@@ -396,6 +397,11 @@ void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row){
     if(isRisingEdgeInterrupt){
         bounceHandlerMutex.lock();                //(0) lock bounce handler mutex to avoid concurrent access
         if(!charPressed && bounceLockout == 0){   //fail immediately if another key is pressed or was pressed recently
+
+            //the following used code is based on the sample code provided at the MBED OS API https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
+                Watchdog &watchdog = Watchdog::get_instance();        //Access the watchdog timer
+                watchdog.start(WATCHDOG_TIMEOUT_DURATION_MS);         //Set the watchdog timer to reset the system if button release is not released for 30 seconds
+
             bounceLockout = bounceTimeoutWindow;  //ensure no additional events are acted upon
             charPressed = detectedKey;            //set the global variable charPressed to the detected key press
             handleInputKey(charPressed);          //(0) call the function to handle the input key without unlocking the mutex
@@ -404,6 +410,10 @@ void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row){
     }else{
         if(charPressed == detectedKey){
             charPressed = '\0';                 //reset the char value to '\0' to indicate that no key is pressed
+
+            //the following used code is based on the sample code provided at the MBED OS API https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
+                Watchdog &watchdog = Watchdog::get_instance();        //Access the watchdog timer
+                watchdog.stop();                                      //disarm the watchdog to prevent system reset when the button is released
         }
     }
 }
