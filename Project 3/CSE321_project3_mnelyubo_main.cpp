@@ -97,6 +97,14 @@
 #define Observer       0x8
 
 //Shared variables
+    /**************************************************************************
+    *                               Mutex Order                               *
+    * Mutexes must be locked in ascending order and unlocked in descending    * 
+    *  order to avoid any potential cases of Deadlock.  The mutex ordering    *
+    *  number (e.g. (3)) is listed with each declared mutex and must be       *
+    *  included on every lock and unlock mutex call to ensure that operations *
+    *  proceed without unrecoverable conflicts.                               *
+    **************************************************************************/
     //Reused from Project 2:
     int bounceLockout = 0;              //set to a value greater than zero whenever a button press is detected in order to lock out duplicate button presses for a brief period
     Mutex bounceHandlerMutex;           //mutex order: (0)
@@ -120,7 +128,6 @@
     };
     Mutex lcdOutputTableRW;             //mutex order: (4)
 
-    //todo: mark mutex order in code for the below:
     int maxDistance = DISTANCE_MAXIMUM; //The maximum distance detected by the distance sensor.  
                                         //Once configured, the stable distance value equaling this value indicates that the container is currently emptied.
                                         //defaults to maximum distance that can be detected by the distance sensor, 4m.
@@ -130,7 +137,6 @@
                                         //Once configured, the stable distance value equaling this value indicates that the container is full.
                                         //defaults to minimum distance that can be detected by the distance sensor, 2cm.
     Mutex minDistanceRW;                //mutex order: (6)
-
 
     int alarmArmed = false;             //indicates if the alarm should sound when the container is not empty after closing time
     Mutex alarmArmedRW;                 //mutex order: (7)
@@ -294,21 +300,39 @@ int main(){
 }
 
 
-void enqueueMatrixAlternation(){matrixOpsEventQueue.call(alternateMatrixInput);}
-
-//Reused from Project 2
+/**
+* void alternateMatrixInput()
+* non-ISR Function
+* Reused from Project 2
+*
+* Summary of the function:
+*    This function alternates which column of the matrix receives voltage to bounce back a signal on the input pins that are expecting interrupt events.
+*    This function only switches matrix columns if no character is currently pressed.
+*
+* Parameters:   
+*    None
+*
+* Return value:
+*    None
+*
+* Outputs:
+*    Exactly one digital high DC output signal between pins PE_2, PE_4, PE_5, and PE_6 will be sent at the end of the execution of this function
+*    During the execution of the function, a brief period (~1ms) may exist where none of the four channels are given a non-zero voltage.
+*
+* Shared variables accessed:
+*    None.  Global variable charPressed is exclusive to operations executing on the matrix operations thread, which can only be one function at any point in time, so a mutex is not required.
+*
+* Helper ISR Function:
+*    enqueueMatrixAlternation
+*/
 void alternateMatrixInput(){
-    //if(!keypadButtonPressMutex.trylock_for(1ms)) return;    //do not alternate input if the keypad mutex is locked, indicating a button press
-
     if(charPressed) return;     //secondary safety to prevent repetition if the Mutex fails
 
-    GPIOE->ODR &= ~(0x74);         //reset voltage to output 0 on all pins
+    GPIOE->ODR &= ~(0x74);      //reset voltage to output 0 on all four alternating pins
 
-    thread_sleep_for(1);    //provide window between one input going low and the next going high
+    thread_sleep_for(1);        //provide a 1ms window between one input going low and the next going high
 
-    //update the row target to poll the next row
-    keypadVccRow++;
-    keypadVccRow%=MatrixDim;
+    keypadVccRow = (1 + keypadVccRow) % MatrixDim;    //update the row target to poll the next row
 
     //Reused from Project 2
     switch (keypadVccRow){
@@ -325,8 +349,9 @@ void alternateMatrixInput(){
             GPIOE->ODR |= 0x40;        //supply voltage to the row of keypad buttons with labels 123A (PE_6)
             break;
     }
-    //keypadButtonPressMutex.unlock();
 }
+//helper function
+void enqueueMatrixAlternation(){matrixOpsEventQueue.call(alternateMatrixInput);}
 
 
 /**
@@ -394,6 +419,51 @@ void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, Fal
 
 
 
+
+//todo: add Watchdog for when a button press is held for longer than 60 seconds
+/**
+* void handleInputKey()
+* non-ISR Function
+* Reused from Project 2
+*
+* Summary of the function:
+*    This function modifies the system state and internal variables based on the user input to the system.
+*    While in the SetRealTime and SetClosingTime states,
+*      Numeric inputs are used to configure the two respective times.
+*      A is used to confirm the current input, defaulting all unentered positions to 0.
+*      C is used to clear the current input time and begin again from the tens of hours.
+*
+*    While in the SetMax and SetMin states,
+*      A is used to lock in the current distance measured by the distance sensor for that particular mode.
+*    
+*   While in the Observer state,
+*      # is used to toggle the alarm being armed or not.
+*
+*    While in any state,
+*      D is used to reset the system to the SetRealTime state to reconfigure the system.
+*
+* Parameters:   
+*    - charPressed - an ASCII character value indicating the user input, based on which to modify the system state or variables
+*
+* Return value:
+*    None
+*
+* Outputs:
+*    None directly.  The configuration of the alarm and LCD outputs may be modified due to calling this function.
+*
+* Shared variables accessed:
+*    currentState       - mutex (1)
+*    outputChangesMade  - mutex (2)
+*    stableDistance     - mutex (3)
+*    lcdOutputTextTable - mutex (4)
+*    maxDistance        - mutex (5)
+*    minDistance        - mutex (6)
+*    alarmArmed         - mutex (7)
+*
+* Helper ISR Function:
+*    no direct helper.  Dependent on handleMatrixButtonEvent
+*/
+
 //MACRO to update an input number that will work as a timestamp.
 //Due to the variable scope of incrementInputIndex, this set of frequently called lines cannot effectively be a function.
 #define updateTimeData  lcdOutputTableRW.lock();    /*(4) lock the LCD output table mutex before modifying values in the table*/      \
@@ -401,35 +471,6 @@ void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, Fal
                         lcdOutputTableRW.unlock();  /*(4) unlock the table mutex as soon as the operation is completed*/              \
                         incrementInputIndex=true;   /*indicate that the input index must be updated*/
 
-
-
-//
-//todo: fix Mutex ordering
-//todo: add Watchdog for when a button press is held for longer than 60 seconds
-
-/**
-* void handleInputKey()
-* non-ISR Function
-* Reused from Project 2
-*
-* Summary of the function:
-*    
-*
-* Parameters:   
-*    
-*
-* Return value:
-*    
-*
-* Outputs:
-*    
-*
-* Shared variables accessed:
-*    
-*
-* Helper ISR Function:
-*    
-*/
 void handleInputKey(char charPressed){
     currentStateRW.lock();              //(1)
     int entryState = currentState;      //act based on the system state preceeding the button press to avoid rollover
@@ -599,31 +640,30 @@ void handleInputKey(char charPressed){
         }
         lcdOutputTableRW.unlock();          //(4)
     }
-    
-    //todo: continue documentation from here
+
     if(entryState == SetMax){
         switch(charPressed){
-            case 'a':
+            case 'a':   //set the maximum distance from the sensor (empty container) equal to the stabilized distance at the time that the button was pressed
                 stableDistanceRWMutex.lock();   //(3)
                 maxDistanceRW.lock();           //(5)
-                maxDistance = stableDistance;
+                maxDistance = stableDistance;   //critical section: set maximum distance equal to stable distance
                 maxDistanceRW.unlock();         //(5)
                 stableDistanceRWMutex.unlock(); //(3)
-                currentState = SetMin;
+                currentState = SetMin;          //with the maximum distance set, switch to the next state for setting the minimum distance (full container)
                 break;
         }
     }
 
     if(entryState == SetMin){
         switch(charPressed){
-            case 'a':
+            case 'a':       //lock in the minimum distance and switch to the observing state
                 stableDistanceRWMutex.lock();    //(3)
                 minDistanceRW.lock();            //(6)
                 alarmArmedRW.lock();             //(7)
                 
-                minDistance = stableDistance;
-                alarmArmed = true;
-                currentState = Observer;
+                minDistance = stableDistance;    //set the minimum distance (full container) to the current stabilized distance measurement
+                currentState = Observer;         //switch to the observer mode to monitor for the conditions required to trigger the alarm
+                alarmArmed = true;               //arm the alarm to be activated when the necessary trigger conditions are met
 
                 alarmArmedRW.unlock();           //(7)
                 minDistanceRW.unlock();          //(6)
@@ -633,9 +673,16 @@ void handleInputKey(char charPressed){
     }
 
     if(entryState == Observer){
-        //TODO
+        switch (charPressed) {
+        case '#':       //toggle state of alarm between armed and off
+            alarmArmedRW.lock();       //(7)
+            alarmArmed = !alarmArmed;
+            alarmArmedRW.unlock();     //(7)
+            break;
+        }
     }
 
+    //todo: continue documentation from here
     //Inputs Independent of State:
     switch(charPressed){
         case 'd':       //return to setup, deactivate the alarm until setup completes
@@ -645,19 +692,12 @@ void handleInputKey(char charPressed){
             alarmArmed = false;        //disable the alarm while not in Observer mode
             alarmArmedRW.unlock();     //(7)
             break;
-        case '#':       //toggle state of alarm between armed and off
-            alarmArmedRW.lock();       //(7)
-            alarmArmed = !alarmArmed;
-            alarmArmedRW.unlock();     //(7)
-            break;
-        
     }
 
     outputChangesMadeRW.lock();     //(2)
-    outputChangesMade = true;
+    outputChangesMade = true;       //after any button press, raise the mutex-protected flag indicating that changes to the output have been made and require an output refresh
     outputChangesMadeRW.unlock();   //(2)
-
-    currentStateRW.unlock();        //(1)
+    currentStateRW.unlock();        //(1) end of critical section where the current state of the system may be modified and lower-level mutexes
 }
 
 
