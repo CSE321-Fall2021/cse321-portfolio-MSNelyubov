@@ -923,6 +923,7 @@ void populateLcdOutput(){
         lcdOutputTextTable[Observer + 1][percentPosition10]  = '0' + (spaceValue/10)  % 10;
         lcdOutputTextTable[Observer + 1][percentPosition1]   = '0' + (spaceValue/1)   % 10;
     }else{
+        spaceValue = 1;   //set to an arbitrary positive value to prevent the alarm from sounding when distance is undefined
         lcdOutputTextTable[Observer + 1][percentPosition100] = 'N';
         lcdOutputTextTable[Observer + 1][percentPosition10]  = '/';
         lcdOutputTextTable[Observer + 1][percentPosition1]   = '0';
