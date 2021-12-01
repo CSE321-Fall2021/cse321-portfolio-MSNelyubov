@@ -1087,7 +1087,8 @@ void populateLcdOutput(){
 //helper ISR Function
 void enqueueOutputRefresh(){outputModificationEventQueue.call(populateLcdOutput);}
 
-//  Assumes that the calling thread has locked the lcdOutputTextTable mutex
+
+
 /**
  * bool closingTimeCrossed()
  * non-ISR function
