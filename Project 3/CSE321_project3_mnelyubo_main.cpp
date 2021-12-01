@@ -146,19 +146,19 @@
 
 //Internal variables exclusive to output data path: LCD
     Thread outputRefreshThread;                                    //thread to execute output modification functions that cannot be handled in an ISR context
-    EventQueue outputModificationEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the lcdRefreshThread
+    EventQueue outputModificationEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the LCD Refresh Thread
 
-    Ticker outputRefreshTicker;                                    //periodically enqueues an event into the lcdRefresh queue to update the contents of the LCD output
+    Ticker outputRefreshTicker;             //periodically enqueues an event into the lcdRefresh queue to update the contents of the LCD output
 
-    CSE321_LCD lcdObject(COL,ROW);                              //create interface to control the output LCD.  Reused from Project 2
-    void populateLcdOutput();                                   //non-ISR function that will update the contents of the LCD output and toggle the state of the buzzer as appropriate
-    bool closingTimeCrossed();                                  //checks if the current time is later than the closing time.  returns true if this is the case
+    CSE321_LCD lcdObject(COL,ROW);          //create interface to control the output LCD.  Reused from Project 2
+    void populateLcdOutput();               //non-ISR function that will update the contents of the LCD output and toggle the state of the buzzer as appropriate
+    bool closingTimeCrossed();              //checks if the current time is later than the closing time.  returns true if this is the case
     
-    void enqueueOutputRefresh();                                   //helper function to enqueue a refresh of the LCD for the lcdRefreshThread to execute
+    void enqueueOutputRefresh();            //helper function to enqueue a refresh of the LCD for the lcdRefreshThread to execute
 
-    Ticker rtClockHandler;                                      //ticker that will periodically enqueue an event increment real-time clock once it is input every second
-    void enqueueRTClockTick();                                  //helper event that enqueues an incrementation of the real-time clock
-    void tickRealTimeClock();                                   //non-ISR function that will increment the real-time clock and handle numeric roll-over
+    Ticker rtClockHandler;                  //ticker that will periodically enqueue an event increment real-time clock once it is input every second
+    void enqueueRTClockTick();              //helper event that enqueues an incrementation of the real-time clock
+    void tickRealTimeClock();               //non-ISR function that will increment the real-time clock and handle numeric roll-over
 
     DigitalOut alarm_Vcc(PB_10);    //starts off with 0V. power to alarm disabled until the alarm state has been set to inactive
     DigitalOut alarm_L(PB_11);      //starts off with 0V. active low component that produces a noise when active
@@ -209,29 +209,29 @@
     int timeInputIndex = 0;         //the current index through the timeInputPositions array.  Accessed solely by the function handleInputKey
 
 //Internal variables exclusive to input data path: Distance Sensor 
-    Thread distanceSensorThread;
-    EventQueue distanceSensorEventQueue(32 * EVENTS_EVENT_SIZE);
+    Thread distanceSensorThread;                                //thread to execute queries and interpret feedback from the distance sensor in functions that cannot be handled in an ISR contex
+    EventQueue distanceSensorEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the distance Sensor Thread
 
-    void enqueuePoll();
-    void pollDistanceSensor();
-    void processDistanceData();
+    void enqueuePoll();                     //periodically executed to enqueue an event into the distance sensor event queue to start measuring the distance detected by the sensor
+    void pollDistanceSensor();              //sends a digital high signal to the distance sensor trigger terminal for 10 microseconds
+    void processDistanceData();             //convert distance sensor response times to a distance and add it to the measured distances array
 
-    void distanceEchoRiseHandler();
-    void distanceEchoFallHandler();
+    void distanceEchoRiseHandler();         //handle rising edge of sensor response by recording timestamp of interrupt
+    void distanceEchoFallHandler();         //handle falling edge of sensor response by recording timestamp of interrupt and enqueueing the processDistanceData function
 
-    ull getTimeSinceStart();
-    int updateStableDistance();
+    ull getTimeSinceStart();                //converts timer duration since start to an unsigned long long and returns that value
+    int updateStableDistance();             //recalculates the stable distance based on the current contents of the stabilizer array
 
-    int distanceBuffer[stabilizerArrayLen];
-    int distanceBuffIdx = 0;
+    int distanceBuffer[stabilizerArrayLen]; //circular array for stabilizing distance inputs.  Only accessed by functions running on the distance sensor thread to ensure mutual exclusion.
+    int distanceBuffIdx = 0;                //the index of the distance buffer that should receive the next polled value
 
-    Timer distanceEchoTimer;
-    Ticker distanceSensorPollStarter;
+    Timer distanceEchoTimer;                //measures the time between the trigger signal, rise, and fall of distance sensor events
+    Ticker distanceSensorPollStarter;       //periodically executes the enqueuePoll function to call for a new distance sensor poll
 
-    ull riseEchoTimestamp = 0;
-    ull fallEchoTimestamp = 0;
+    ull riseEchoTimestamp = 0;              //the time between when the poll was started and the time that the rising edge of the echo was detected
+    ull fallEchoTimestamp = 0;              //the time between when the poll was started and the time that the falling edge of the echo was detected
 
-    InterruptIn echo(PC_8);
+    InterruptIn echo(PC_8);                 //interrupt that listens for the rising and falling edges of the distance sensor echo channel
 
 
 //beginning of main execution
@@ -806,31 +806,26 @@ void distanceEchoRiseHandler(){
 }
 
 
-//todo: document from here down
-
-//locks and writes to the stableDistance shared variable
-int updateStableDistance(){
-    int sum = 0;
-    for(int i = 0; i < stabilizerArrayLen; i++){
-        sum += distanceBuffer[i];
-    }
-    int averageDistance = sum / stabilizerArrayLen;
-    
-    bool acquiredLock = stableDistanceRWMutex.trylock();  //(3)
-    if(acquiredLock){
-        if(stableDistance != averageDistance){
-            outputChangesMadeRW.lock();          //(2)
-            outputChangesMade = true;
-            outputChangesMadeRW.unlock();        //(2)
-
-            stableDistance = averageDistance;
-        }
-        stableDistanceRWMutex.unlock();       //(3)
-    }
-
-    return averageDistance;     //returns the new stable distance as a non-mutex-protected value
-}
-
+/**
+ * unsigned long long getTimeSinceStart()
+ * ISR-friendly helper function
+ * 
+ * Summary of the function:
+ *    This function returns the elapsed time in milliseconds since the distance echo timer was started.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    The elapsed time in milliseconds since the distance echo timer was started.
+ *
+ * Outputs:
+ *    None
+ *
+ * Shared variables accessed:
+ *    The Timer distanceEchoTimer, exclusive to the distance sensor thread, is accessed.
+ *
+ */
 //Access global object timer to get the time since the process began in microseconds
 //code in this function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
 ull getTimeSinceStart() {
@@ -839,8 +834,81 @@ ull getTimeSinceStart() {
 }
 
 
-//ISR function called by ticker to enqueue main function: tickRealTimeClock
-void enqueueRTClockTick(){outputModificationEventQueue.call(tickRealTimeClock);}
+/**
+ * int updateStableDistance()
+ * non-ISR function
+ * 
+ * Summary of the function:
+ *    This function recalculates the stable distance detected by the distance sensor as an average of the sampled array of distances.
+ *    If the stable distance mutex is unlocked, the function will update the value of the stable distance to match the newly calculated value.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    A copy of the updated value of the sum, not needing mutex protection
+ *
+ * Outputs:
+ *    The changes made flag is raised to update outputs with new stable distance value
+ *
+ * Shared variables accessed:
+ *    outputChangesMade  - mutex (2)
+ *    stableDistance     - mutex (3)
+ *
+ * Helper ISR Function:
+ *    no direct helper.  Dependent on processDistanceData
+ */
+int updateStableDistance(){
+    //iterate over the stabilizer array list to calculate the sum of the list
+    int sum = 0;
+    for(int i = 0; i < stabilizerArrayLen; i++){
+        sum += distanceBuffer[i];
+    }
+    int averageDistance = sum / stabilizerArrayLen;     //divide by the length of the list to get the average value, to be used as the stabilized distance
+    
+    outputChangesMadeRW.lock();          //(2)
+    bool acquiredLock = stableDistanceRWMutex.trylock();  //(3) if the stable distance mutex is locked, give up and update the protected value at a later time
+    if(acquiredLock){                                       //if the mutex was successfully acquired, update the stable distance with the new average value
+        if(stableDistance != averageDistance){              //if the previous stable distance is different from the new average
+            outputChangesMade = true;                       //raise the flag indicating that the output must be refreshed to account for this new value
+            stableDistance = averageDistance;               //update the stable distance with the new average value
+        }
+        stableDistanceRWMutex.unlock();       //(3)
+    }
+    outputChangesMadeRW.unlock();        //(2)
+
+    return averageDistance;     //returns the new stable distance as a non-mutex-protected value regardless of whether or not it was successfully locked in
+}
+
+
+
+/**
+ * void tickRealTimeClock()
+ * non-ISR Function
+ * 
+ * Summary of the function:
+ *    This funciton increments the real-world clock time by one second every time that it is 
+ *      called (once per second) and handles the rollover into higher-signficance positions of the timestamp.
+ *    The stabilized value after the rollover has been handled is then also cloned into the Observer state output.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    The changes made flag is raised to update outputs with new stable distance value
+ *
+ * Shared variables accessed:
+ *    currentState       - mutex (1)
+ *    outputChangesMade  - mutex (2)
+ *    lcdOutputTextTable - mutex (4)
+ *
+ * Helper ISR Function:
+ *   enqueueRTClockTick 
+ *
+ */
 void tickRealTimeClock(){
     currentStateRW.lock();          //(1)
     outputChangesMadeRW.lock();     //(2)
@@ -877,7 +945,7 @@ void tickRealTimeClock(){
         }
     }
 
-    //put new value of SetRealTime
+    //put new value of SetRealTime into the Observer state as well
     for(int i = timeInputHours10; i <= timeInputSecs01; i++){
         lcdOutputTextTable[Observer + 1][i] = lcdOutputTextTable[SetRealTime + 1][i];
     }
@@ -886,6 +954,11 @@ void tickRealTimeClock(){
     outputChangesMadeRW.unlock();  //(2)
     currentStateRW.unlock();       //(1)
 }
+//helper ISR Function
+void enqueueRTClockTick(){outputModificationEventQueue.call(tickRealTimeClock);}
+
+//todo: document from here down
+
 
 void enqueueOutputRefresh(){outputModificationEventQueue.call(populateLcdOutput);}
 //reused from Project 2 due to modularity of code and reuse of peripheral
