@@ -302,6 +302,7 @@ int main(){
 }
 
 
+
 /**
  * void alternateMatrixInput()
  * non-ISR Function
@@ -354,6 +355,7 @@ void alternateMatrixInput(){
 }
 //helper function
 void enqueueMatrixAlternation(){matrixOpsEventQueue.call(alternateMatrixInput);}
+
 
 
 /**
@@ -432,9 +434,6 @@ void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, Fal
 
 
 
-
-
-//todo: add Watchdog for when a button press is held for longer than 60 seconds
 /**
  * void handleInputKey()
  * non-ISR Function
@@ -717,6 +716,7 @@ void handleInputKey(char charPressed){
 
 void enqueuePoll(){distanceSensorEventQueue.call(pollDistanceSensor);}
 //non-ISR function
+
 /**
  * void pollDistanceSensor()
  * non-ISR function
@@ -747,6 +747,8 @@ void pollDistanceSensor(){
     wait_us(10);
     GPIOC->ODR &= ~(0x200);
 }
+
+
 
 /**
  * void processDistanceData()
@@ -821,6 +823,7 @@ int updateStableDistance(){
         stableDistanceRWMutex.unlock();       //(3)
     }
     return averageDistance;
+
 }
 
 //Access global object timer to get the time since the process began in microseconds
