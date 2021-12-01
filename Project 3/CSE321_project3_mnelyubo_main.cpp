@@ -714,8 +714,6 @@ void handleInputKey(char charPressed){
 }
 
 
-void enqueuePoll(){distanceSensorEventQueue.call(pollDistanceSensor);}
-//non-ISR function
 
 /**
  * void pollDistanceSensor()
@@ -743,10 +741,12 @@ void pollDistanceSensor(){
     distanceEchoTimer.start();  //start the timer to measure response time
 
     //send trigger signal high for 10 us
-    GPIOC->ODR |= 0x200;
-    wait_us(10);
-    GPIOC->ODR &= ~(0x200);
+    GPIOC->ODR |= 0x200;    //set signal high on pin PC_9
+    wait_us(10);            //wait 10 us
+    GPIOC->ODR &= ~(0x200); //set signal low on pin PC_9
 }
+//helper ISR Function
+void enqueuePoll(){distanceSensorEventQueue.call(pollDistanceSensor);}
 
 
 
@@ -777,22 +777,25 @@ void pollDistanceSensor(){
  *
  */
 void processDistanceData(){
-    ull deltaTime = fallEchoTimestamp - riseEchoTimestamp;
-    int distance = deltaTime / 58;
-    if(distance < DISTANCE_MAXIMUM){
-        distanceBuffer[distanceBuffIdx++ % stabilizerArrayLen]=distance;
+    ull deltaTime = fallEchoTimestamp - riseEchoTimestamp;      //the time between the rising and falling edge events in microseconds
+    int distance = deltaTime / 58;                              //distance sensor documentation states divide the time delta by (58 us/cm) to calculate distance in cm
+    if(DISTANCE_MINIMUM < distance && distance < DISTANCE_MAXIMUM){          //if the detected distance is within the range of values that the sensor can accurately measure
+        distanceBuffer[distanceBuffIdx++ % stabilizerArrayLen] = distance;   //add it to the stabilizer array by overwriting the oldest value in the array
     }
 
-    printf("Threaded sample measured: %d cm \tStabilized estimate: %d cm \tChar Pressed: %c\n", distance, updateStableDistance(), charPressed);   //documentation states divide by 58 to provide distance in CM
-    riseEchoTimestamp=false;
-    fallEchoTimestamp=false;
+    int updatedStableDistance = updateStableDistance();     //call updateStableDistance to recalculate the stable distance
+    // printf("Threaded sample measured: %d cm \tStabilized estimate: %d cm \tChar Pressed: %c\n", distance, updatedStableDistance, charPressed);
 
-    distanceEchoTimer.stop();
-    distanceEchoTimer.reset();  //reset the timer for the next run
+    //clear timestamp data after distance has been recorded
+    riseEchoTimestamp = 0;
+    fallEchoTimestamp = 0;
 
+    distanceEchoTimer.stop();   //stop the timer to prevent it from counting up after the reset
+    distanceEchoTimer.reset();  //reset the timer to be ready for the next run
 }
+//Helper ISR Functions:
 
-//ISR function to immediately handle falling edge of distance scan
+//ISR function to immediately handle falling edge of distance scan and enqueue a processing of the recorded data
 void distanceEchoFallHandler(){
     fallEchoTimestamp=getTimeSinceStart();
     distanceSensorEventQueue.call(processDistanceData);
@@ -822,8 +825,8 @@ int updateStableDistance(){
         }
         stableDistanceRWMutex.unlock();       //(3)
     }
-    return averageDistance;
 
+    return averageDistance;     //returns the new stable distance as a non-mutex-protected value
 }
 
 //Access global object timer to get the time since the process began in microseconds
