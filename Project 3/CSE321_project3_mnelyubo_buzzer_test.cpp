@@ -23,7 +23,6 @@
 
 #include <mbed.h>
 
-#define OSCILLATION_HALF_PERIOD_US 50
 
 Thread buzzerThread;
 Thread alternatorThread;
@@ -33,16 +32,20 @@ void runBuzzer();
 DigitalOut alarm_Vcc(PB_10);    //starts off with 0V. power to alarm disabled until the alarm state has been set to inactive
 DigitalOut alarm_L(PB_11);      //starts off with 0V. active low component that produces a noise when active
 
+int OSCILLATION_HALF_PERIOD_US = 50;
+
 int main() {
     alarm_L.write(1);   //start the alarm in a disabled state (active low -> 1 disables)
     alarm_Vcc.write(1); //supply power to alarm
 
     buzzerThread.start(runBuzzer);
 
-  while(1) {
-    thread_sleep_for(500); //idle
-  }
-  
+    while(1) {
+        OSCILLATION_HALF_PERIOD_US++;   //gradually decrease the frequency every second
+        printf("New operating period: %d\n",OSCILLATION_HALF_PERIOD_US);
+        thread_sleep_for(10);         //idle for a second between decrements
+    }
+
   return 0;
 }
 
