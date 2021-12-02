@@ -29,6 +29,9 @@
  *      Buzzer module must be connected to the Nucleo with the following pins:
  *          TODO
  *
+ *   Additional Notes:
+ *       A hardware watchdog timer reset is implemented in this function to prevent a system reset if the input button is not stuck.
+ *         Code to operate the watchdog in the main function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
  *
  *   References:
  *       HC-SR04 distance sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
@@ -305,6 +308,13 @@ int main(){
         bounceHandlerMutex.lock();              //(0) lock the bounce handler mutex to avoid concurrent R/W operations from another thread
         if(bounceLockout > 0) bounceLockout--;  //decrement the bounce lockout if it is still greater than 0 after a recent rising edge button press
         bounceHandlerMutex.unlock();            //(0) unlock the bounce handler immediately after the critical section is exited
+
+        //the following used code is based on the sample code provided at the MBED OS API https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
+        if(!charPressed){                       //if there is no input to the system, keep the watchdog armed but prevent it from reseting the system
+            Watchdog &watchdog = Watchdog::get_instance();          //access the watchdog instance
+            if(watchdog.is_running()) watchdog.kick();              //if the watchdog is already running, ask it nicely to not reset the system
+            else watchdog.start(WATCHDOG_TIMEOUT_DURATION_MS);      //Set the watchdog timer to reset the system if button is not released for 30 seconds
+        }
     }
     return 0;
 }
@@ -374,9 +384,6 @@ void enqueueMatrixAlternation(){matrixOpsEventQueue.call(alternateMatrixInput);}
  * Summary of the function:
  *    This function converts any event triggered by a matrix button input into a character, handles duplicate events due to bounce, and calls handleInputKey on the rising edge of filtered results.
  *
- *    A hardware watchdog timer is implemented in this function to start a system reset if an input button is not released for 30 seconds
- *      some code in this function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
- *
  * Parameters:   
  *    - isRisingEdgeInterrupt - boolean indicating whether the trigger event is a rising or falling edge of a button press
  *    - column                - integer 0-3 indicating the matrix column of the input button press, used to map to the proper key value
@@ -407,11 +414,6 @@ void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row){
     if(isRisingEdgeInterrupt){
         bounceHandlerMutex.lock();                //(0) lock bounce handler mutex to avoid concurrent access
         if(!charPressed && bounceLockout == 0){   //fail immediately if another key is pressed or was pressed recently
-
-            //the following used code is based on the sample code provided at the MBED OS API https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
-                Watchdog &watchdog = Watchdog::get_instance();        //Access the watchdog timer
-                watchdog.start(WATCHDOG_TIMEOUT_DURATION_MS);         //Set the watchdog timer to reset the system if button release is not released for 30 seconds
-
             bounceLockout = bounceTimeoutWindow;  //ensure no additional events are acted upon
             charPressed = detectedKey;            //set the global variable charPressed to the detected key press
             handleInputKey(charPressed);          //(0) call the function to handle the input key without unlocking the mutex
@@ -420,10 +422,6 @@ void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row){
     }else{
         if(charPressed == detectedKey){
             charPressed = '\0';                 //reset the char value to '\0' to indicate that no key is pressed
-
-            //the following used code is based on the sample code provided at the MBED OS API https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
-                Watchdog &watchdog = Watchdog::get_instance();        //Access the watchdog timer
-                watchdog.stop();                                      //disarm the watchdog to prevent system reset when the button is released
         }
     }
 }
