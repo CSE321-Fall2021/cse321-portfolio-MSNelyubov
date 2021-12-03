@@ -33,20 +33,89 @@ Thread alternatorThread;
 
 void runBuzzer();
 
-#define frequencyTableLength 8
+#define frequencyTableLength 64
 #define frequencyTableFields 3
 #define tableOffsetFreq 0
 #define tableOffsetDutyCycle 1
 #define tableOffsetDuration 2
-int outputSoundTable[]= { /*frequency,  duty cycle, note duration(ms)*/
-                            200,        20,         250,
-                            150,        20,         250,
-                            200,        20,         250,
-                            150,        20,         250,
-                            100,        20,         250,
-                            175,        20,         250,
-                            50,         20,         250,
-                            1,          00,         1000         //produce no sound for at end of cycle
+
+/**
+*   This array contains the "audio" data to continously play on the buzzer.
+*   array entries %3 are as follows:
+*   %3=0 -> frequency (Hz)
+*   %3=1 -> duty cycle (0-100, 0 -> off)
+*   %3=2 -> note duration (ms)
+*/
+int outputSoundTable[frequencyTableLength * frequencyTableFields] = {
+  /*frequency,  duty cycle, note duration(ms)*/
+    200,        20,         100,        //first cycle starts with lowest pitch high-switch sound
+    200,        00,         100,
+    200,        20,         100,
+    200,        00,         100,
+    050,        20,         400,        //low note after two short high notes
+    200,        20,         100,
+    200,        00,         100,
+    200,        20,         100,
+    200,        00,         100,
+    075,        20,         400,        //low note after two short high notes
+    150,        20,         200,    //end of tune jingle
+    100,        20,         200,    //
+    125,        20,         200,    //
+    100,        20,         200,    //
+    125,        20,         200,    //
+    1,          00,         750,        //produce no sound for at end of cycle
+
+    250,        20,         100,        //repeat with higher fast-switch tones
+    250,        00,         100,
+    250,        20,         100,
+    250,        00,         100,
+    050,        20,         400,        //low note after two short high notes
+    250,        20,         100,
+    250,        00,         100,
+    250,        20,         100,
+    250,        00,         100,
+    075,        20,         400,        //low note after two short high notes
+    150,        20,         200,    //end of tune jingle
+    100,        20,         200,    //
+    125,        20,         200,    //
+    100,        20,         200,    //
+    125,        20,         200,    //
+    1,          00,         750,        //produce no sound for at end of cycle
+
+    300,        20,         100,        //repeat with even higher fast-switch tones
+    300,        00,         100,
+    300,        20,         100,
+    300,        00,         100,
+    050,        20,         400,        //low note after two short high notes
+    300,        20,         100,
+    300,        00,         100,
+    300,        20,         100,
+    300,        00,         100,
+    075,        20,         400,        //low note after two short high notes
+    150,        20,         200,    //end of tune jingle
+    100,        20,         200,    //
+    125,        20,         200,    //
+    100,        20,         200,    //
+    125,        20,         200,    //
+    1,          00,         750,        //produce no sound for at end of cycle
+
+    350,        20,         100,        //repeat with highest pitch fast-switch tones
+    350,        00,         100,
+    350,        20,         100,
+    350,        00,         100,
+    050,        20,         400,        //low note after two short high notes
+    350,        20,         100,
+    350,        00,         100,
+    350,        20,         100,
+    350,        00,         100,
+    075,        20,         400,        //low note after two short high notes
+    150,        20,         200,    //end of tune jingle
+    100,        20,         200,    //
+    125,        20,         200,    //
+    100,        20,         200,    //
+    125,        20,         200,    //
+    1,          00,         750        //produce no sound for at end of cycle
+
 };
 
 
