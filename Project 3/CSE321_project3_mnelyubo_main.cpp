@@ -109,6 +109,16 @@
 #define SetMin         0x6
 #define Observer       0x8
 
+//buzzer configuration
+#define nanosecondsPerSecond 1000*1000*1000
+
+//buzzer frequency table 
+#define frequencyTableLength 64
+#define frequencyTableFields 3
+#define tableOffsetFreq      0
+#define tableOffsetDutyCycle 1
+#define tableOffsetDuration  2
+
 //Shared variables
     /**************************************************************************
     *                               Mutex Order                               *
@@ -151,7 +161,7 @@
                                         //defaults to minimum distance that can be detected by the distance sensor, 2cm.
     Mutex minDistanceRW;                //mutex order: (6)
 
-    int alarmArmed = false;             //indicates if the alarm should sound when the container is not empty after closing time
+    bool alarmArmed = false;            //indicates if the alarm should sound when the container is not empty after closing time
     Mutex alarmArmedRW;                 //mutex order: (7)
 
 
@@ -171,8 +181,98 @@
     void enqueueRTClockTick();              //helper event that enqueues an incrementation of the real-time clock
     void tickRealTimeClock();               //non-ISR function that will increment the real-time clock and handle numeric roll-over
 
-    DigitalOut alarm_Vcc(PB_10);    //starts off with 0V. power to alarm disabled until the alarm state has been set to inactive
-    DigitalOut alarm_L(PB_11);      //starts off with 0V. active low component that produces a noise when active
+    DigitalOut alarm_Enable(PB_10);    //starts off with 0V. power to alarm disabled until the alarm needs to be turned on.  Used as enable for audio output from always-runing buzzer.
+
+//Internal variables exclusive to output data path: Buzzer
+    Thread alternatorThread;    //the thread that will modify the signal output by the buzzer
+    Thread buzzerDataThread;    //the thread that will send data to the buzzer's I/O channel to produce audio
+
+    int DUTY_CYCLE = 0;         //integer between 0 and 100 indicating what percent of the time the signal should be high
+    int OSCILLATION_FREQ;       //frequency of digital signal oscillation in Hertz
+
+    void runBuzzer();           //sends square wave signal to the buzzer
+    void alternateBuzzer();     //modifies frequency, duty cycle, and duration of the next buzzer tone
+
+    DigitalOut alarm_data_L(PB_11);     //starts off with 0V. active low component that produces a noise when active.  Frequency and duty cycle variation allow for notes to be played.
+
+    /****************************************************************************
+    *   This array contains the "audio" data to continously play on the buzzer. *
+    *   array entries %3 are as follows:                                        *
+    *      %3 == 0 -> frequency (Hz)                                            *
+    *      %3 == 1 -> duty cycle (0-100, 0 -> off)                              *
+    *      %3 == 2 -> note duration (ms)                                        *
+    ****************************************************************************/
+    int outputSoundTable[frequencyTableLength * frequencyTableFields] = {
+      /*frequency,  duty cycle, note duration(ms)*/
+        200,        20,         100,        //first cycle starts with lowest pitch high-switch sound
+        200,        00,         100,
+        200,        20,         100,
+        200,        00,         100,
+        050,        20,         400,        //low note after two short high notes
+        200,        20,         100,
+        200,        00,         100,
+        200,        20,         100,
+        200,        00,         100,
+        075,        20,         400,        //low note after two short high notes
+        150,        20,         200,    //end of tune jingle
+        100,        20,         200,    //
+        125,        20,         200,    //
+        100,        20,         200,    //
+        125,        20,         200,    //
+        100,        00,         750,        //produce no sound for at end of cycle
+
+        250,        20,         100,        //repeat with higher fast-switch tones
+        250,        00,         100,
+        250,        20,         100,
+        250,        00,         100,
+        050,        20,         400,        //low note after two short high notes
+        250,        20,         100,
+        250,        00,         100,
+        250,        20,         100,
+        250,        00,         100,
+        075,        20,         400,        //low note after two short high notes
+        150,        20,         200,    //end of tune jingle
+        100,        20,         200,    //
+        125,        20,         200,    //
+        100,        20,         200,    //
+        125,        20,         200,    //
+        100,        00,         750,        //produce no sound for at end of cycle
+
+        300,        20,         100,        //repeat with even higher fast-switch tones
+        300,        00,         100,
+        300,        20,         100,
+        300,        00,         100,
+        050,        20,         400,        //low note after two short high notes
+        300,        20,         100,
+        300,        00,         100,
+        300,        20,         100,
+        300,        00,         100,
+        075,        20,         400,        //low note after two short high notes
+        150,        20,         200,    //end of tune jingle
+        100,        20,         200,    //
+        125,        20,         200,    //
+        100,        20,         200,    //
+        125,        20,         200,    //
+        100,        00,         750,        //produce no sound for at end of cycle
+
+        350,        20,         100,        //repeat with highest pitch fast-switch tones
+        350,        00,         100,
+        350,        20,         100,
+        350,        00,         100,
+        050,        20,         400,        //low note after two short high notes
+        350,        20,         100,
+        350,        00,         100,
+        350,        20,         100,
+        350,        00,         100,
+        075,        20,         400,        //low note after two short high notes
+        150,        20,         200,    //end of tune jingle
+        100,        20,         200,    //
+        125,        20,         200,    //
+        100,        20,         200,    //
+        125,        20,         200,    //
+        1,          00,         750        //produce no sound for at end of cycle
+
+    };
 
 //Internal variables exclusive to input data path: 4x4 matrix keypad
     Thread matrixThread;                                    //thread to execute handler functions triggered by user interaction with the matrix keypad
@@ -218,6 +318,7 @@
         timeInputSecs01
     };
     int timeInputIndex = 0;         //the current index through the timeInputPositions array.  Accessed solely by the function handleInputKey
+
 
 //Internal variables exclusive to input data path: Distance Sensor 
     Thread distanceSensorThread;                                //thread to execute queries and interpret feedback from the distance sensor in functions that cannot be handled in an ISR contex
@@ -280,8 +381,6 @@ int main(){
     GPIOE->MODER |= 0x01510;       
     GPIOE->MODER &= ~(0x02A20);
 
-    alarm_L.write(1);       //Disable active low alarm
-    alarm_Vcc.write(1);     //Enable power to alarm
 
     /*************************
     *Peripheral configuration*
@@ -302,6 +401,8 @@ int main(){
     matrixThread.start(callback(&matrixOpsEventQueue, &EventQueue::dispatch_forever));  //set the matrix I/O thread to continously execute anything in the matrix operations event queue
     matrixAlternationTicker.attach(&enqueueMatrixAlternation, 10ms);        //set the output to matrix alternation ticker to enqueue an alternation every 10ms
 
+    alternatorThread.start(&alternateBuzzer);  //set the buzzer alternation thread to run the alternate buzzer function continously
+    buzzerDataThread.start(&runBuzzer);        //set the buzzer execution thread to oscillate I/O at the variable oscillation frequency and duty cycle
     
     while(true){ //Idle on main thread to prevent program from exiting
         thread_sleep_for(1);                    //timeout thread for 1ms every cycle with no mutexes locked.
@@ -677,15 +778,20 @@ void handleInputKey(char charPressed){
         switch(charPressed){
             case 'a':       //lock in the minimum distance and switch to the observing state
                 stableDistanceRWMutex.lock();    //(3)
+                maxDistanceRW.lock();            //(5)
                 minDistanceRW.lock();            //(6)
                 alarmArmedRW.lock();             //(7)
                 
                 minDistance = stableDistance;    //set the minimum distance (full container) to the current stabilized distance measurement
                 currentState = Observer;         //switch to the observer mode to monitor for the conditions required to trigger the alarm
-                alarmArmed = true;               //arm the alarm to be activated when the necessary trigger conditions are met
+                
+                if(minDistance != maxDistance){   //only start off with the alarm armed if the min and max distances aren't equal.  If the alarm is turned on while they are equal, the alarm will always sound.
+                    alarmArmed = true;               //arm the alarm to be activated when the necessary trigger conditions are met
+                }
 
                 alarmArmedRW.unlock();           //(7)
                 minDistanceRW.unlock();          //(6)
+                maxDistanceRW.unlock();          //(5)
                 stableDistanceRWMutex.unlock();  //(3)
                 break;
         }
@@ -1062,9 +1168,9 @@ void populateLcdOutput(){
     alarmArmedRW.unlock();   //(7)
 
     if(activateAlarm){
-        alarm_L.write(0);        //send signal low  to active low alarm pin (PB_11), enabling the alarm
+        alarm_Enable.write(1);        //activate Vcc to alarm pin (PB_10), enabling the alarm audio
     }else{
-        alarm_L.write(1);        //send signal high to active low alarm pin (PB_11), disabling the alarm
+        alarm_Enable.write(0);        //zero out Vcc to alarm pin (PB_10), disabling the alarm audio
     }
 
     //refresh each line of the LCD display
@@ -1118,4 +1224,35 @@ bool closingTimeCrossed(){
 
     //times are exactly equal if the for loop has been escaped.  Return false since it has not yet been *crossed*
     return false;
+}
+
+
+void alternateBuzzer(){
+    int currentNoteIndex = 0;
+    int waitTime = 0;       //time (ms) to wait before switching to the next note
+    while(1) {
+        while(alarm_Enable.read() == 0){        //if no power is currently being supplied to Vcc, don't bother sending alternation instructions
+            currentNoteIndex = 0;               //reset the alarm index to the first note, to be played once the alarm is turned back on
+            thread_sleep_for(100);              //sleep to avoid burning system resources
+        }
+        OSCILLATION_FREQ = outputSoundTable[frequencyTableFields * currentNoteIndex + tableOffsetFreq];     //switch the frequency to the next table value
+        DUTY_CYCLE = outputSoundTable[frequencyTableFields * currentNoteIndex + tableOffsetDutyCycle];      //switch the duty cycle to the next table value
+        waitTime = outputSoundTable[frequencyTableFields * currentNoteIndex + tableOffsetDuration];         //switch the duration to the next table value
+
+        thread_sleep_for(waitTime);                                         //idle for the designated note duration before proceeding
+        currentNoteIndex = (currentNoteIndex + 1) % frequencyTableLength;   //proceed to next table value in next cycle of while loop
+    }
+}
+
+
+void runBuzzer(){
+    while(1) {
+        int Period = nanosecondsPerSecond / (OSCILLATION_FREQ);
+        int highPeriod = Period * DUTY_CYCLE / 100;
+        int lowPeriod = Period - highPeriod;        //ensure that low period + high period time adds to period time 
+        alarm_data_L.write(0);
+        wait_ns(highPeriod);
+        alarm_data_L.write(1);
+        wait_ns(lowPeriod);
+    }
 }
