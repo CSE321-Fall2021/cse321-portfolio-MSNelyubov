@@ -1,21 +1,60 @@
 /******************************************************************************
- *   File Name:      CSE321_project3_mnelyubo_range_test.cpp
+ *   File Name:      CSE321_project3_mnelyubo_main.cpp
  *   Author:         Misha Nelyubov (mnelyubo@buffalo.edu)
  *   Date Created:   11/20/2021
- *   Last Modified:  11/20/2021
+ *   Last Modified:  12/03/2021
+ ******************************************************************************
  *   Purpose:
- *       This program operates four peripherals to notify workers about if there
- *         are food items remaining in a container that can be taken home
- *         at closing time.
- *
+ *       This program operates a distance sensor, buzzer, LCD, and matrix 
+ *         keypad to notify workers if there are food items remaining in a 
+ *         container that can be taken home at closing time.
+ ******************************************************************************
  *   Functions:      
+ *      void alternateMatrixInput()
+ *      void enqueueMatrixAlternation() (ISR)
  *
+ *      void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row)
+ *      void rising_isr_abc()  (ISR)
+ *      void falling_isr_abc() (ISR)
+ *      void rising_isr_369()  (ISR)
+ *      void falling_isr_369() (ISR)
+ *      void rising_isr_258()  (ISR)
+ *      void falling_isr_258() (ISR)
+ *      void rising_isr_147()  (ISR)
+ *      void falling_isr_147() (ISR)
+ *
+ *      void handleInputKey(char charPressed)
+ *
+ *      void pollDistanceSensor()
+ *      void enqueuePoll() (ISR)
+ *
+ *      void processDistanceData()
+ *      void distanceEchoFallHandler() (ISR)
+ *      void distanceEchoRiseHandler() (ISR)
+ *      unsigned long long getTimeSinceStart() (ISR-compatible)
+ *
+ *      int updateStableDistance()
+ *
+ *      void tickRealTimeClock()
+ *      void enqueueRTClockTick() (ISR)
+ *
+ *      void populateLcdOutput()
+ *      void enqueueOutputRefresh() (ISR) 
+ *      bool closingTimeCrossed()
+ *
+ *      void alternateBuzzer()
+ *      void runBuzzer()
+ *
+ ******************************************************************************
  *   Assignment:     Project 3
  *
+ ******************************************************************************
  *   Inputs:         Range Detection Sensor, 4x4 Matrix Keypad
  *
+ ******************************************************************************
  *   Outputs:        Serial printout, LCD, Alarm Buzzer
  *
+ ******************************************************************************
  *   Constraints:
  *      Range Detection Sensor (new input) must be connected to the Nucleo with the following pins:
  *          Vcc  - 5V
@@ -41,10 +80,12 @@
  *          SDA - PB_9
  *          SCL - PB_8
  *
+ ******************************************************************************
  *   Additional Notes:
  *       A hardware watchdog timer reset is implemented in this function to prevent a system reset if the input button is not stuck.
  *         Code to operate the watchdog in the main function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
  *
+ ******************************************************************************
  *   References:
  *       NUCLEO datasheet:                     https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
  *       HC-SR04 distance sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
@@ -54,6 +95,7 @@
  *
  ******************************************************************************/
 
+//library imports
 #include "mbed.h"
 #include "1802.h"
 #include <chrono>
@@ -91,10 +133,12 @@
 #define timeInputSecs01 15
 #define timeInputSecs10 14
 
+//string index and representation of the alarm indicator in the LCD output Observer state
 #define alarmIndicatorPosition 7
 #define alarmIndicatorArmed '#'
 #define alarmIndicatorOff ' '
 
+//how long the watchdog will wait in an unexpected state before resetting the system
 #define WATCHDOG_TIMEOUT_DURATION_MS 30000 /*30 seconds*/
 
 //Reused from Project 2: dimension (row and column) of the Matrix keypad
@@ -544,14 +588,14 @@ void handleMatrixButtonEvent(bool isRisingEdgeInterrupt, int column, int row){
 //Helper Functions:
 //Reused from Project 2
 // Handle interrupts by enqueueing matrix operation queue events to address the cause of the interrupt in a non-ISR context
-void rising_isr_abc(void) {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  ColABC, keypadVccRow);}
-void falling_isr_abc(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, ColABC, keypadVccRow);}
-void rising_isr_369(void) {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col369, keypadVccRow);}
-void falling_isr_369(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col369, keypadVccRow);}
-void rising_isr_258(void) {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col258, keypadVccRow);}
-void falling_isr_258(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col258, keypadVccRow);}
-void rising_isr_147(void) {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col147, keypadVccRow);}
-void falling_isr_147(void){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col147, keypadVccRow);}
+void rising_isr_abc() {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  ColABC, keypadVccRow);}
+void falling_isr_abc(){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, ColABC, keypadVccRow);}
+void rising_isr_369() {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col369, keypadVccRow);}
+void falling_isr_369(){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col369, keypadVccRow);}
+void rising_isr_258() {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col258, keypadVccRow);}
+void falling_isr_258(){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col258, keypadVccRow);}
+void rising_isr_147() {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col147, keypadVccRow);}
+void falling_isr_147(){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col147, keypadVccRow);}
 
 
 
@@ -1083,8 +1127,6 @@ void tickRealTimeClock(){
 //helper ISR Function
 void enqueueRTClockTick(){outputModificationEventQueue.call(tickRealTimeClock);}
 
-//todo: document from here down
-
 
 
 /**
@@ -1241,6 +1283,7 @@ bool closingTimeCrossed(){
 }
 
 
+
 /**
  * void alternateBuzzer()
  * non-ISR Function
@@ -1286,6 +1329,7 @@ void alternateBuzzer(){
         currentNoteIndex = (currentNoteIndex + 1) % frequencyTableLength;   //proceed to next table value in next cycle of while loop
     }
 }
+
 
 
 /**
