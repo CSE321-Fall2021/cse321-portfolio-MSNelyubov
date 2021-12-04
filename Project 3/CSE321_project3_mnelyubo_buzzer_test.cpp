@@ -122,15 +122,15 @@ int outputSoundTable[frequencyTableLength * frequencyTableFields] = {
 int DUTY_CYCLE = 0;             //integer between 0 and 100 indicating what percent of the time the signal should be high
 
 
-DigitalOut alarm_Vcc(PB_10);    //starts off with 0V. power to alarm disabled until the alarm state has been set to inactive
-DigitalOut alarm_L(PB_11);      //starts off with 0V. active low component that produces a noise when active
+DigitalOut alarm_Enable(PB_10);    //starts off with 0V. power to alarm disabled until the alarm state has been set to inactive
+DigitalOut alarm_data_L(PB_11);      //starts off with 0V. active low component that produces a noise when active
 
 
 int OSCILLATION_FREQ;      //frequency of digital signal oscillation in Hertz
 
 int main() {
-    alarm_L.write(1);   //start the alarm in a disabled state (active low -> 1 disables)
-    alarm_Vcc.write(1); //supply power to alarm
+    alarm_data_L.write(1);   //start the alarm in a disabled state (active low -> 1 disables)
+    alarm_Enable.write(1); //supply power to alarm
     
     buzzerThread.start(runBuzzer);      //set the buzzer execution thread to oscillate I/O at the variable oscillation frequency
 
@@ -155,9 +155,9 @@ void runBuzzer(){
         int Period = nanosecondsPerSecond / (OSCILLATION_FREQ);
         int highPeriod = Period * DUTY_CYCLE / 100;
         int lowPeriod = Period - highPeriod;        //ensure that low period + high period time adds to period time 
-        alarm_L.write(0);
+        alarm_data_L.write(0);
         wait_ns(highPeriod);
-        alarm_L.write(1);
+        alarm_data_L.write(1);
         wait_ns(lowPeriod);
     }
 }
