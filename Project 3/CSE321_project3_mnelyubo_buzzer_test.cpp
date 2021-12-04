@@ -21,6 +21,8 @@
 *                       VCC - PB_10                                           *
 *                                                                             *
 *   References:                                                               *
+*       Buzzer datasheet:                                                     *
+*         https://www.mouser.com/datasheet/2/400/ef532_ps-13444.pdf           *
 *                                                                             *
 ******************************************************************************/
 
