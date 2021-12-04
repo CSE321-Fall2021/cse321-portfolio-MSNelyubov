@@ -16,18 +16,30 @@
  *
  *   Outputs:        Serial printout, LCD, Alarm Buzzer
  *
- *   Constraints:    
- *      Range Detection Sensor must be connected to the Nucleo with the following pins:
+ *   Constraints:
+ *      Range Detection Sensor (new input) must be connected to the Nucleo with the following pins:
  *          Vcc  - 5V
  *          Trig - PC_9
  *          Echo - PC_8
  *          Gnd  - GND
- *      LCD must be connected to the Nucleo with the following pins:
- *          TODO
- *      4x4 matrix keypad must be connected to the Nucleo with the following pins:
- *          TODO
- *      Buzzer module must be connected to the Nucleo with the following pins:
- *          TODO
+ *      Buzzer module (new output) must be connected to the Nucleo with the following pins:
+ *          GND - GND
+ *          I/O - PB_11
+ *          VCC - PB_10
+ *      4x4 matrix keypad (old input) must be connected to the Nucleo with the following pins:
+ *          Matrix pin 1 - PC_0 (A1)
+ *          Matrix pin 2 - PC_3 (A2)
+ *          Matrix pin 3 - PC_1 (A3)
+ *          Matrix pin 4 - PC_4 (A4)
+ *          Matrix pin 5 - PE_2
+ *          Matrix pin 6 - PE_4
+ *          Matrix pin 7 - PE_5
+ *          Matrix pin 8 - PE_6
+ *      LCD (old output) must be connected to the Nucleo with the following pins:
+ *          GND - GND
+ *          VCC - 5V
+ *          SDA - PB_9
+ *          SCL - PB_8
  *
  *   Additional Notes:
  *       A hardware watchdog timer reset is implemented in this function to prevent a system reset if the input button is not stuck.
