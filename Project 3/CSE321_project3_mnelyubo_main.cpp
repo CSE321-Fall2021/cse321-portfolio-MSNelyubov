@@ -417,6 +417,7 @@ int main(){
     alternatorThread.start(&alternateBuzzer);  //set the buzzer alternation thread to run the alternate buzzer function continously
     buzzerDataThread.start(&runBuzzer);        //set the buzzer execution thread to oscillate I/O at the variable oscillation frequency and duty cycle
     
+
     while(true){ //Idle on main thread to prevent program from exiting
         thread_sleep_for(1);                    //timeout thread for 1ms every cycle with no mutexes locked.
         bounceHandlerMutex.lock();              //(0) lock the bounce handler mutex to avoid concurrent R/W operations from another thread
@@ -1240,10 +1241,39 @@ bool closingTimeCrossed(){
 }
 
 
+/**
+ * void alternateBuzzer()
+ * non-ISR Function
+ * 
+ * Summary of the function:
+ *    This function runs continously on the dedicated thread alternatorThread.
+ *    If the alarm is powered on, this function progresses the global 
+ *       variables OSCILLATION_FREQ and DUTY_CYCLE based through the 
+ *       data listed in the array outputSoundTable.
+ *    After each iteration, the function will pause for a varied period 
+ *      corresponding to the duration of the note listed in that array entry.
+ *    If the alarm is powered off, the function idles awaiting for the alarm to 
+ *       be turned on and resets the position in the array (from which to start 
+ *       playinng audio) to the start of the array.
+ *
+ * Parameters:   
+ *    None
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    The values of OSCILLATION_FREQ and DUTY_CYCLE are modified
+ *
+ * Shared variables accessed:
+ *    OSCILLATION_FREQ
+ *    DUTY_CYCLE
+ *
+ */
 void alternateBuzzer(){
-    int currentNoteIndex = 0;
-    int waitTime = 0;       //time (ms) to wait before switching to the next note
-    while(1) {
+    int currentNoteIndex = 0;   //current index in the array of notes to play on the buzzer
+    int waitTime = 0;           //time (ms) to wait before switching to the next note
+    while(1) {          //run indefinitely
         while(alarm_Enable.read() == 0){        //if no power is currently being supplied to Vcc, don't bother sending alternation instructions
             currentNoteIndex = 0;               //reset the alarm index to the first note, to be played once the alarm is turned back on
             thread_sleep_for(100);              //sleep to avoid burning system resources
@@ -1258,14 +1288,39 @@ void alternateBuzzer(){
 }
 
 
+/**
+ * void runBuzzer()
+ * non-ISR Function
+ * 
+ * Summary of the function:
+ *    This function runs continously on the dedicated thread buzzerDataThread.
+ *    Every cycle of this function outputs a single square wave cycle to the buzzer 
+ *    The period and duty cycle of the square wave are determined by the global 
+ *      variables OSCILLATION_FREQ and DUTY_CYCLE
+ *
+ * Parameters:  (while not arguments of the function, its execution depends on the following)
+ *    OSCILLATION_FREQ
+ *    DUTY_CYCLE
+ *
+ * Return value:
+ *    None
+ *
+ * Outputs:
+ *    This function modifies the digital output value of pin PB_11, controlling the audio of the buzzer
+ *
+ * Shared variables accessed:
+ *    OSCILLATION_FREQ
+ *    DUTY_CYCLE
+ *
+ */
 void runBuzzer(){
-    while(1) {
-        int Period = nanosecondsPerSecond / (OSCILLATION_FREQ);
-        int highPeriod = Period * DUTY_CYCLE / 100;
-        int lowPeriod = Period - highPeriod;        //ensure that low period + high period time adds to period time 
-        alarm_data_L.write(0);
-        wait_ns(highPeriod);
-        alarm_data_L.write(1);
-        wait_ns(lowPeriod);
+    while(1) {          //run indefinitely
+        int Period = nanosecondsPerSecond / OSCILLATION_FREQ;   //(ns) the duration of one cycle period
+        int highPeriod = Period * DUTY_CYCLE / 100;         //(ns) the portion of the period that the alarm spends in the active state
+        int lowPeriod = Period - highPeriod;            //(ns) the portion of the period that the alarm spends in the inactive state. ensure that low period + high period time adds to period time by being a derived quantity of the two previously derived quantities 
+        alarm_data_L.write(0);                      //activate the alarm
+        wait_ns(highPeriod);                    //wait the calculated quantity of nanoseconds with the alarm on
+        alarm_data_L.write(1);              //disable the alarm
+        wait_ns(lowPeriod);             //wait the remaining portion of the time period with the alarm off before proceeding to the next cycle
     }
 }
