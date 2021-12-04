@@ -46,8 +46,9 @@
  *         Code to operate the watchdog in the main function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
  *
  *   References:
- *       HC-SR04 distance sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
  *       NUCLEO datasheet:                     https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
+ *       HC-SR04 distance sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
+ *       Buzzer datasheet:                     https://www.mouser.com/datasheet/2/400/ef532_ps-13444.pdf
  *       MBED OS API: timer                    https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
  *       MBED OS API: Watchdog                 https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
  *
