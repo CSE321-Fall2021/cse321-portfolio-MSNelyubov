@@ -413,7 +413,7 @@
     InterruptIn echo(PC_8);                 //interrupt that listens for the rising and falling edges of the distance sensor echo channel
 
 
-//beginning of main execution
+//main sequence execution/initialization
 int main(){
     printf("\n\n=== System Startup ===\n");
 
