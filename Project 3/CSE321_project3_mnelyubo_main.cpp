@@ -1320,8 +1320,8 @@ bool closingTimeCrossed(){
  *    The values of oscillationFrequency and dutyCycle are modified
  *
  * Shared variables accessed:
- *    oscillationFrequency
- *    dutyCycle
+ *    dutyCycle            - mutex (8)
+ *    oscillationFrequency - mutex (9)
  *
  */
 void alternateBuzzer(){
@@ -1370,8 +1370,8 @@ void alternateBuzzer(){
  *    This function modifies the digital output value of pin PB_11, controlling the audio of the buzzer
  *
  * Shared variables accessed:
- *    oscillationFrequency
- *    dutyCycle
+ *    dutyCycle            - mutex (8)
+ *    oscillationFrequency - mutex (9)
  *
  */
 void runBuzzer(){
