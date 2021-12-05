@@ -433,9 +433,9 @@ int main(){
     colCR.fall(&falling_isr_258);   //assign interrupt handler for a falling edge event from the column containing buttons 2,5,8,0
     colRR.fall(&falling_isr_147);   //assign interrupt handler for a falling edge event from the column containing buttons 1,4,7,*
 
-    /*************************
-    *   Pin configuration    *
-    *************************/
+    /*******************************
+    * Bitwise Driver Configuration *
+    *******************************/
 
     //enable ports B,C,E
     RCC->AHB2ENR |= 0x16;
@@ -449,15 +449,15 @@ int main(){
     GPIOE->MODER &= ~(0x02A20);
 
 
-    /*************************
-    *Peripheral configuration*
-    *************************/
+    /*******************************
+    *   Peripheral Configuration   *
+    *******************************/
     lcdObject.begin();              //initialize LCD, reused from Project 2
 
 
-    /*************************
-    *  Thread configuration  *
-    *************************/
+    /*******************************
+    *     Thread Configuration     *
+    *******************************/
     distanceSensorThread.start(callback(&distanceSensorEventQueue, &EventQueue::dispatch_forever));    //set the distance sensor thread to continuously execute anything in the distance sensor event queue
     distanceSensorPollStarter.attach(&enqueuePoll, 100ms);                  //set the distance sensor poll starting ticker to enqueue a poll of the distance every 100ms
 
