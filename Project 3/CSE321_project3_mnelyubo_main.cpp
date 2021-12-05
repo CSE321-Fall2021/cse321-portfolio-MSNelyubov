@@ -101,84 +101,94 @@
 #include <chrono>
 
 
-//LCD properties
-#define COL 16
-#define ROW 2
+//Definitions
+    //LCD properties
+    #define COL 16
+    #define ROW 2
 
-//Reused from Project 2: Matrix event aliases
-#define RisingEdgeInterrupt true
-#define FallingEdgeInterrupt false
+    //Reused from Project 2: Matrix event aliases
+    #define RisingEdgeInterrupt true
+    #define FallingEdgeInterrupt false
 
-//Reused from Project 2: Associated column values with their respective character key value index in the matrix
-#define ColABC 0
-#define Col369 1
-#define Col258 2
-#define Col147 3
+    //Reused from Project 2: Associated column values with their respective character key value index in the matrix
+    #define ColABC 0
+    #define Col369 1
+    #define Col258 2
+    #define Col147 3
 
-//LCD character positions
-#define distancePosition100  11
-#define distancePosition10   12
-#define distancePosition1    13
+    //LCD character positions
+    #define distancePosition100  11
+    #define distancePosition10   12
+    #define distancePosition1    13
 
-//string indexes of the Observer mode for informing a user of the currently used capacity of the container
-#define percentPosition100 0
-#define percentPosition10  1
-#define percentPosition1   2
+    //string indexes of the Observer mode for informing a user of the currently used capacity of the container
+    #define percentPosition100 0
+    #define percentPosition10  1
+    #define percentPosition1   2
 
-//string indexes of the SetRealTIme, SetClosingTime, and Observer modes indicating where the time string is stored
-#define timeInputHours01 9
-#define timeInputHours10 8
-#define timeInputMins01 12
-#define timeInputMins10 11
-#define timeInputSecs01 15
-#define timeInputSecs10 14
+    //string indexes of the SetRealTIme, SetClosingTime, and Observer modes indicating where the time string is stored
+    #define timeInputHours01 9
+    #define timeInputHours10 8
+    #define timeInputMins01 12
+    #define timeInputMins10 11
+    #define timeInputSecs01 15
+    #define timeInputSecs10 14
 
-//string index and representation of the alarm indicator in the LCD output Observer state
-#define alarmIndicatorPosition 7
-#define alarmIndicatorArmed '#'
-#define alarmIndicatorOff ' '
+    //string index and representation of the alarm indicator in the LCD output Observer state
+    #define alarmIndicatorPosition 7
+    #define alarmIndicatorArmed '#'
+    #define alarmIndicatorOff ' '
 
-//how long the watchdog will wait in an unexpected state before resetting the system
-#define WATCHDOG_TIMEOUT_DURATION_MS 30000 /*30 seconds*/
+    //how long the watchdog will wait in an unexpected state before resetting the system
+    #define WATCHDOG_TIMEOUT_DURATION_MS 30000 /*30 seconds*/
 
-//Reused from Project 2: dimension (row and column) of the Matrix keypad
-#define MatrixDim 4
+    //Reused from Project 2: dimension (row and column) of the Matrix keypad
+    #define MatrixDim 4
 
-//Reused from Project 2: keypad bounce timeout window (ms)
-#define bounceTimeoutWindow 100
+    //Reused from Project 2: keypad bounce timeout window (ms)
+    #define bounceTimeoutWindow 100
 
-//Distance Sensor data
-#define POLLING_HIGH_TIME     10us
-#define POLLING_CYCLE_TIME_MS 100
-#define DISTANCE_MINIMUM 2    /* sensor min range is stated to be 2   cm */
-#define DISTANCE_MAXIMUM 400  /* sensor max range is stated to be 400 cm */
+    //Distance Sensor data
+    #define POLLING_HIGH_TIME     10us
+    #define POLLING_CYCLE_TIME_MS 100
+    #define DISTANCE_MINIMUM 2    /* sensor min range is stated to be 2   cm */
+    #define DISTANCE_MAXIMUM 400  /* sensor max range is stated to be 400 cm */
 
-//data type alias
-#define ull unsigned long long
+    //data type alias
+    #define ull unsigned long long
 
-//output stabilization buffer data
-#define stabilizerArrayLen 4
+    //output stabilization buffer data
+    #define stabilizerArrayLen 4
 
-//system state configuration
-#define SetRealTime    0x0
-#define SetClosingTime 0x2
-#define SetMax         0x4
-#define SetMin         0x6
-#define Observer       0x8
+    //system state configuration
+    #define SetRealTime    0x0
+    #define SetClosingTime 0x2
+    #define SetMax         0x4
+    #define SetMin         0x6
+    #define Observer       0x8
 
-//buzzer configuration
-#define nanosecondsPerSecond 1000*1000*1000
+    //buzzer configuration
+    #define nanosecondsPerSecond 1000*1000*1000
 
-//buzzer frequency table 
-#define frequencyTableLength 64
-#define frequencyTableFields 3
-#define tableOffsetFreq      0
-#define tableOffsetDutyCycle 1
-#define tableOffsetDuration  2
+    //buzzer frequency table 
+    #define frequencyTableLength 64
+    #define frequencyTableFields 3
+    #define tableOffsetFreq      0
+    #define tableOffsetDutyCycle 1
+    #define tableOffsetDuration  2
 
-//Shared variables
+//Internal variables shared by more than on thread
     /**************************************************************************
+    * Competitive resource usage conflict avoidance synchronization technique * 
+    *  used: mutual exclusion.  Only one thread may read from or write to a   *
+    *  shared resource at any given point in time.  The following shared      *
+    *  variables pose a risk for system failure if they are accessed or       *
+    *  modified by multiple threads concurrently.  All access to these        *
+    *  resources must be limited to one thread at a time that has locked the  *
+    *  corresponding mutex to ensure that it has sole access to the resource. *
+    ***************************************************************************
     *                               Mutex Order                               *
+    ***************************************************************************
     * Mutexes must be locked in ascending order and unlocked in descending    * 
     *  order to avoid any potential cases of Deadlock.  The mutex ordering    *
     *  number (e.g. (3)) is listed with each declared mutex and must be       *
