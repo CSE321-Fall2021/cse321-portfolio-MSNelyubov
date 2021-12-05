@@ -1177,20 +1177,19 @@ void enqueueRTClockTick(){outputModificationEventQueue.call(tickRealTimeClock);}
 void populateLcdOutput(){
     currentStateRW.lock();          //(1)
     outputChangesMadeRW.lock();     //(2)
-    stableDistanceRWMutex.lock();   //(3)
-    lcdOutputTableRW.lock();        //(4)
-    maxDistanceRW.lock();           //(5)
-    minDistanceRW.lock();           //(6)
 
+    //only execute if output changes have been made
     if(!outputChangesMade){
-        minDistanceRW.unlock();          //(6)
-        maxDistanceRW.unlock();          //(5)
-        lcdOutputTableRW.unlock();       //(4)
-        stableDistanceRWMutex.unlock();  //(3)
         outputChangesMadeRW.unlock();    //(2)
         currentStateRW.unlock();         //(1)
         return;
     }
+
+    //now that it has been confirmed that output changes are necessary, lock the remaining required mutexes
+    stableDistanceRWMutex.lock();   //(3)
+    lcdOutputTableRW.lock();        //(4)
+    maxDistanceRW.lock();           //(5)
+    minDistanceRW.lock();           //(6)
 
     outputChangesMade = false;
 
