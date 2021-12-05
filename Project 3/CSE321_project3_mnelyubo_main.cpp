@@ -232,7 +232,7 @@
     Mutex alarmArmedRW;                 //mutex order: (7)
 
 
-//Internal variables exclusive to output data path: LCD
+//Internal variables exclusive to output data path: LCD (Integration of a previously used output peripheral)
     Thread outputRefreshThread;                                    //thread to execute output modification functions that cannot be handled in an ISR context
     EventQueue outputModificationEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the LCD Refresh Thread
 
@@ -240,9 +240,9 @@
 
     CSE321_LCD lcdObject(COL,ROW);          //create interface to control the output LCD.  Reused from Project 2
     void populateLcdOutput();               //non-ISR function that will update the contents of the LCD output and toggle the state of the buzzer as appropriate
+    void enqueueOutputRefresh();            //helper function to enqueue a refresh of the LCD for the lcdRefreshThread to execute
     bool closingTimeCrossed();              //checks if the current time is later than the closing time.  returns true if this is the case
     
-    void enqueueOutputRefresh();            //helper function to enqueue a refresh of the LCD for the lcdRefreshThread to execute
 
     Ticker rtClockHandler;                  //ticker that will periodically enqueue an event increment real-time clock once it is input every second
     void enqueueRTClockTick();              //helper event that enqueues an incrementation of the real-time clock
@@ -250,8 +250,8 @@
 
     DigitalOut alarm_Enable(PB_10);    //starts off with 0V. power to alarm disabled until the alarm needs to be turned on.  Used as enable for audio output from always-runing buzzer.
 
-//Internal variables exclusive to output data path: Buzzer
-    Thread alternatorThread;    //the thread that will modify the signal output by the buzzer
+//Internal variables exclusive to output data path: Buzzer (Integration of a new output peripheral)
+    Thread buzzerAlternatorThread;    //the thread that will modify the signal output by the buzzer
     Thread buzzerDataThread;    //the thread that will send data to the buzzer's I/O channel to produce audio
 
     int DUTY_CYCLE = 0;         //integer between 0 and 100 indicating what percent of the time the signal should be high
@@ -341,7 +341,7 @@
 
     };
 
-//Internal variables exclusive to input data path: 4x4 matrix keypad
+//Internal variables exclusive to input data path: 4x4 matrix keypad (Integration of a previously used input peripheral)
     Thread matrixThread;                                    //thread to execute handler functions triggered by user interaction with the matrix keypad
     EventQueue matrixOpsEventQueue(32 * EVENTS_EVENT_SIZE); //queue of events for the matrix thread to execute
     Ticker matrixAlternationTicker;                         //ticker that will create periodic matrix events to alternate the channel being polled
@@ -387,7 +387,7 @@
     int timeInputIndex = 0;         //the current index through the timeInputPositions array.  Accessed solely by the function handleInputKey
 
 
-//Internal variables exclusive to input data path: Distance Sensor 
+//Internal variables exclusive to input data path: Distance Sensor (Integration of a new input peripheral)
     Thread distanceSensorThread;                                //thread to execute queries and interpret feedback from the distance sensor in functions that cannot be handled in an ISR contex
     EventQueue distanceSensorEventQueue(32 * EVENTS_EVENT_SIZE);    //queue of events that must be handled by the distance Sensor Thread
 
@@ -468,8 +468,8 @@ int main(){
     matrixThread.start(callback(&matrixOpsEventQueue, &EventQueue::dispatch_forever));  //set the matrix I/O thread to continously execute anything in the matrix operations event queue
     matrixAlternationTicker.attach(&enqueueMatrixAlternation, 10ms);        //set the output to matrix alternation ticker to enqueue an alternation every 10ms
 
-    alternatorThread.start(&alternateBuzzer);  //set the buzzer alternation thread to run the alternate buzzer function continously
-    buzzerDataThread.start(&runBuzzer);        //set the buzzer execution thread to oscillate I/O at the variable oscillation frequency and duty cycle
+    buzzerAlternatorThread.start(&alternateBuzzer);  //set the buzzer alternation thread to run the alternate buzzer function continously
+    buzzerDataThread.start(&runBuzzer);              //set the buzzer execution thread to oscillate I/O at the variable oscillation frequency and duty cycle
     
 
     while(true){ //Idle on main thread to prevent program from exiting
