@@ -61,10 +61,14 @@
  *          Trig - PC_9
  *          Echo - PC_8
  *          Gnd  - GND
+ *     The HC-SR04 Range Detection Sensor only supports accurate measurement 
+ *       of distances between 2cm and 400cm away from the sensor (datasheet).
+ *
  *      Buzzer module (new output) must be connected to the Nucleo with the following pins:
  *          GND - GND
  *          I/O - PB_11
  *          VCC - PB_10
+ *
  *      4x4 matrix keypad (old input) must be connected to the Nucleo with the following pins:
  *          Matrix pin 1 - PC_0 (A1)
  *          Matrix pin 2 - PC_3 (A2)
@@ -74,6 +78,7 @@
  *          Matrix pin 6 - PE_4
  *          Matrix pin 7 - PE_5
  *          Matrix pin 8 - PE_6
+ *
  *      LCD (old output) must be connected to the Nucleo with the following pins:
  *          GND - GND
  *          VCC - 5V
@@ -82,15 +87,17 @@
  *
  ******************************************************************************
  *   Additional Notes:
- *       A hardware watchdog timer reset is implemented in this function to prevent a system reset if the input button is not stuck.
- *         Code to operate the watchdog in the main function is from https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
+ *       A hardware watchdog timer reset is implemented in this function 
+ *          to prevent a system reset if the input button is not stuck.
+ *       Code to operate the watchdog in the main function is from
+ *          https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
  *
  ******************************************************************************
  *   References:
  *       NUCLEO datasheet:                     https://www.st.com/resource/en/reference_manual/dm00310109-stm32l4-series-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
  *       HC-SR04 distance sensor datasheet:    https://www.digikey.com/htmldatasheets/production/1979760/0/0/1/hc-sr04.html
  *       Buzzer datasheet:                     https://www.mouser.com/datasheet/2/400/ef532_ps-13444.pdf
- *       MBED OS API: timer                    https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
+ *       MBED OS API: Timer                    https://os.mbed.com/docs/mbed-os/v6.15/apis/timer.html
  *       MBED OS API: Watchdog                 https://os.mbed.com/docs/mbed-os/v6.15/apis/watchdog.html
  *
  ******************************************************************************/
@@ -99,7 +106,6 @@
 #include "mbed.h"
 #include "1802.h"
 #include <chrono>
-
 
 //Definitions
     //LCD properties
@@ -491,7 +497,6 @@ int main(){
 }
 
 
-
 /**
  * void alternateMatrixInput()
  * non-ISR Function
@@ -544,7 +549,6 @@ void alternateMatrixInput(){
 }
 //helper function
 void enqueueMatrixAlternation(){matrixOpsEventQueue.call(alternateMatrixInput);}
-
 
 
 /**
@@ -608,7 +612,6 @@ void rising_isr_258() {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingE
 void falling_isr_258(){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col258, keypadVccRow);}
 void rising_isr_147() {matrixOpsEventQueue.call(handleMatrixButtonEvent, RisingEdgeInterrupt,  Col147, keypadVccRow);}
 void falling_isr_147(){matrixOpsEventQueue.call(handleMatrixButtonEvent, FallingEdgeInterrupt, Col147, keypadVccRow);}
-
 
 
 /**
@@ -895,7 +898,6 @@ void handleInputKey(char charPressed){
 }
 
 
-
 /**
  * void pollDistanceSensor()
  * non-ISR function
@@ -928,7 +930,6 @@ void pollDistanceSensor(){
 }
 //helper ISR Function
 void enqueuePoll(){distanceSensorEventQueue.call(pollDistanceSensor);}
-
 
 
 /**
@@ -1063,7 +1064,6 @@ int updateStableDistance(){
 }
 
 
-
 /**
  * void tickRealTimeClock()
  * non-ISR Function
@@ -1138,7 +1138,6 @@ void tickRealTimeClock(){
 }
 //helper ISR Function
 void enqueueRTClockTick(){outputModificationEventQueue.call(tickRealTimeClock);}
-
 
 
 /**
@@ -1259,7 +1258,6 @@ void populateLcdOutput(){
 void enqueueOutputRefresh(){outputModificationEventQueue.call(populateLcdOutput);}
 
 
-
 /**
  * bool closingTimeCrossed()
  * non-ISR function
@@ -1292,7 +1290,6 @@ bool closingTimeCrossed(){
     //times are exactly equal if the for loop has been escaped.  Return false since it has not yet been *crossed*
     return false;
 }
-
 
 
 /**
@@ -1346,7 +1343,6 @@ void alternateBuzzer(){
         currentNoteIndex = (currentNoteIndex + 1) % frequencyTableLength;   //proceed to next table value in next cycle of while loop
     }
 }
-
 
 
 /**
